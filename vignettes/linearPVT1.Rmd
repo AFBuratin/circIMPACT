@@ -1,0 +1,2030 @@
+---
+title: "RNA-seq analysis using circPVT1 as stratificator"
+author: "Alessia"
+output: 
+  flexdashboard::flex_dashboard:
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+basedir <- "/blackhole/circrna/analyses/VanVlierberghe/"
+meta_file <- file.path(basedir, "merge_T/sample_conditions.csv")
+out.dir <- "TALL/TALL_Rproj/circPVT1/results_gene"
+dir.create(file.path(basedir, out.dir), showWarnings = F, recursive = T)
+
+knitr::opts_chunk$set(fig.width = 8, 
+                      fig.height = 7, 
+                      dev = c('svglite', 'png'), 
+                      fig.pos = "center",
+                      fig.path = file.path(out.dir, 
+                                           paste0('geneFigs',
+                                                  .Platform$file.sep)),
+                      echo = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE,
+                      progress = FALSE)
+
+library(flexdashboard)
+library(data.table)
+library(DT)
+library(ggplot2)
+library(ggrepel)
+library(viridis)
+library(pheatmap)
+library(RColorBrewer)
+library(ggthemes)
+library(ggsci)
+library(scales)
+library(DESeq2)
+library(limma)
+#library(zinbwave)
+library(scRNAseq)
+library(matrixStats)
+library(magrittr)
+library(biomaRt)
+library(dplyr)
+library(tidyverse)
+library(gridExtra)
+library(grid)
+library(affy)
+library(scRNA.seq.funcs)
+library(matrixStats)
+library(M3Drop)
+library(kableExtra)
+library(plyr)
+library(RColorBrewer)
+library(SingleCellExperiment)
+library(tidyverse)
+library(DaMiRseq)
+library(captioner)
+library(MASS)
+library(kknn)
+library(e1071)
+library(grid)
+library(gridExtra)
+library(gtable)
+library(ggrepel)
+library(sva)
+library(Rtsne)
+basedir.tall <- "/blackhole/circrna/analyses/VanVlierberghe/TALL/"
+
+source(file.path(basedir.tall,"/TALL_Rproj/R/EnsembleLearningNclAFB.R"))
+source(file.path(basedir.tall, "/TALL_Rproj/R/ML_imp_plot.R"))
+source(file.path(basedir.tall, "/TALL_Rproj/R/MDS_Plot.R"))
+source(file.path(basedir.tall, "/TALL_Rproj/R/Heatmap.R"))
+source(file.path(basedir.tall, "/TALL_Rproj/R/sva_function.R"))
+source(file.path(basedir.tall, "/TALL_Rproj/R/resDE_plot.R"))
+
+```
+
+
+```{r}
+fix.name <- function(x){
+  gsub(pattern = " ", replacement = "", 
+       sub("^([0-9].*)", "X\\1",
+           sub("C$", "",
+                # gsub("X", "",
+                    gsub(pattern = "-|/", replacement = "_", 
+                        gsub("\\+", "p", x)))))
+}
+```
+
+```{r set custom color shades}
+library(RColorBrewer)
+library("colorspace")
+
+gg_color_hue <- function(n) {
+    hues = seq(20, 360, length = n + 1)
+    hcl(h = hues, l = 65, c = 100, ch = 80)[1:n]
+    # hcl_palettes("sequential (multi-hue)", n = n, palette = "Plasma")
+}
+
+get.color.hues <- function(meta){
+  
+    intgroup.dt <- meta[, .(.N), by = .(sample_id, 
+                                        condition)][order(sample_id), 
+                                                    .(sample_id), by = condition]
+    samples.per.condition <- data.frame(intgroup.dt[, .N, by = .(condition)], 
+                                        row.names = "condition")
+    n.conditions <- nrow(samples.per.condition)
+  
+    hues <- c("#FF4500", #TLX3
+              "#FFA500", #HOXA
+              "#C71585", #TLX1
+              "#FF00FF", #TAL_LMO
+              "#FFD700") #IMM 
+              
+    for(i in 1:n.conditions){
+        n.hues <- samples.per.condition[i, "N"] + 2
+        col.hues <- colorRampPalette(colors = c(hues[i], 
+                                                "white"))(n.hues)[1:(n.hues-2)]
+            
+        intgroup.dt[condition == rownames(samples.per.condition)[i], `:=`(color = col.hues,
+                                                                          hue = hues[i])]
+    }
+    intgroup.dt[]
+}
+
+
+
+```
+
+
+```{r}
+# set names of samples in tall subgroups 
+tall.subsamples <- c("IMM", "TLX3", "HOXA", "TLX1", "TAL-LMO")
+geneofinterest <- "PVT1"
+geneofinterest_KD <- c(paste0(geneofinterest, "_OE"), paste0(geneofinterest, "_KD"))
+circ_idofinterest <- "8:127890589-127890998"
+
+```
+
+
+```{r meta, echo=FALSE}
+basedir.tall <- "/blackhole/circrna/analyses/VanVlierberghe/TALL/"
+meta_file_tall <- file.path(basedir.tall, "analyses/meta_tall.csv")
+# create meta file with sample.ID, condition, from meta_tall.csv
+if(meta_file_tall != ""){
+  meta_tall <- unique(fread(meta_file_tall)[, .(sample_id = fix.name(Donor), 
+                                                condition = Condition,
+                                                tissue = Tissue,
+                                                Age = gsub(",", ".", Age),
+                                                Sex,
+                                                RNAQuality)])
+  meta_tall$condition <- gsub("  ", " ", meta_tall$condition)
+  # meta_tall$condition <- factor(meta_tall$condition, levels = tall.subsamples, ordered = T)
+  intgroup.dt.tall <- get.color.hues(meta_tall)
+}
+meta_tall[, `:=` (sample_id2 = str_sub(sample_id, 13,14))]
+meta_tall[, `:=` (sample_id3 = paste(fix.name(condition), sample_id2, sep="_"))]
+meta_tall <- meta_tall %>% dplyr::select(-sample_id2)
+
+```
+
+```{r input_circrnadata}
+fix.name.dot <- function(x){
+  gsub(pattern = " ", replacement = "", 
+       sub("^([0-9].*)", "X\\1", 
+           gsub(pattern = "\\.|/", replacement = "_", 
+                gsub("\\+", "p", x))))
+}
+
+## read circRNA results
+colClasses <- c("factor", "factor", "character", "integer", "integer", 
+                "integer", "factor", "character", "character")
+V9pattern <- '.*gene_id "([^"]*)".*transcript_id "([^"]*)".*'
+# transcript_id = gene_id+sample_id
+V9newCols <- c("gene_id", "transcript_id")
+
+circrnas.tall.gtf <- fread("/blackhole/circrna/analyses/VanVlierberghe/TALL/analyses/circular_expression/circRNA_collection/circrnas.gtf", data.table=T, colClasses = colClasses)
+
+circrnas.tall.gtf[, `:=` (sample_id = str_replace(fix.name(sub('.*sample_id "([^"]*)".*', "\\1", V9)), "C", ""))
+             ][, (V9newCols) := tstrsplit(sub(V9pattern, "\\1@\\2", V9), "@", 
+                                          fixed=TRUE)][, `:=`(V3 = NULL, 
+                                                              V8 = NULL, 
+                                                              V9 = NULL)]
+circrnas.tall.gtf[, `:=` (sample_id2 = str_sub(sample_id, 13,14))]
+circrnas.tall.gtf[, `:=` (circ_id = sub(':([^:]*)$', '', gene_id))]
+
+reliable.circrnas.tall <- read.csv(file.path(basedir.tall, "/analyses/circular_expression/circrna_analyze/circRNA_expression_per_sample.csv"),
+                                   sep = ",")
+reliable.circrnas.tall$circ_id <- as.character(reliable.circrnas.tall$circ_id)
+colnames(reliable.circrnas.tall)[c(7:31)] <- str_replace(fix.name.dot(colnames(reliable.circrnas.tall)[c(7:31)]), "C", "")
+reliable.circrnas.tall <- as.data.table(reliable.circrnas.tall)
+
+count.matrix.tall <- as.matrix(reliable.circrnas.tall[,c(7:31)])
+rownames(count.matrix.tall) <- reliable.circrnas.tall$circ_id
+
+reliable.circrnas.tall.gtf <-
+    merge(circrnas.tall.gtf[circrnas.tall.gtf$circ_id %in% reliable.circrnas.tall$circ_id,
+                            .(sample_id2,
+                              sample_id,
+                              circ_id = circ_id, 
+                              circ.method = V2,
+                              reads = V6)],
+          meta_tall, by = "sample_id")
+
+reliable.circrnas.tall.gtf[, `:=` (sample_id3 = paste(condition, sample_id2, sep="_"))]
+
+## make short samples names
+colnames(count.matrix.tall) <- reliable.circrnas.tall.gtf$sample_id3[match(colnames(count.matrix.tall), reliable.circrnas.tall.gtf$sample_id)]
+
+intgroup.dt.tall$sample_id <- reliable.circrnas.tall.gtf$sample_id3[match(intgroup.dt.tall$sample_id, reliable.circrnas.tall.gtf$sample_id)]
+
+# select sample with circPVT1 OE (values higher than the median)
+circ_sample <- reliable.circrnas.tall %>% as.data.table() %>% dplyr::filter(circ_id==circ_idofinterest) %>% dplyr::select_if(is.numeric) %>% gather(sample_id, sample_val) %>% dplyr::filter(sample_val>median(sample_val))
+circ_sample <- merge(circ_sample, meta_tall, by = "sample_id")
+meta_tall <- meta_tall %>% mutate(geneKD = if_else(sample_id3%in%circ_sample$sample_id3, paste0(geneofinterest, "_OE"), paste0(geneofinterest, "_KD")))
+```
+
+
+```{r inputlinear_data}
+fix.name.dot <- function(x){
+  gsub(pattern = " ", replacement = "", 
+       sub("^([0-9].*)", "X\\1", 
+           gsub(pattern = "\\.|/", replacement = "_", 
+                gsub("\\+", "p", x))))
+}
+
+## read circRNA results
+colClasses <- c("factor", "factor", "character", "integer", "integer", 
+                "integer", "factor", "character", "character")
+V9pattern <- '.*gene_id "([^"]*)".*transcript_id "([^"]*)".*'
+# transcript_id = gene_id+sample_id
+V9newCols <- c("gene_id", "transcript_id")
+
+gene_expression_TPM <- fread("/blackhole/circrna/analyses/VanVlierberghe/TALL/analyses/linear_expression/linear_quantexp/geneexp/gene_expression_TPM_table.csv")
+# gene_expression_TPM_normal <- fread("/blackhole/circrna/analyses/VanVlierberghe/T_norm/analysis_2019/linear_expression/linear_quantexp_stringtie/geneexp/gene_expression_TPM_table.csv")
+
+gene_expression_TPM.dt <- gene_expression_TPM %>% dplyr::select('Gene Name', starts_with("2015")) %>% as.data.table() %>% 
+  melt(id.vars = "Gene Name",  variable.name = "sample_id", value.name = "reads")
+gene_expression_TPM.dt$sample_id <-sub("C$", "", gene_expression_TPM.dt$sample_id)
+gene_expression_TPM.dt$sample_id <-gsub(pattern = "-|/", replacement = "_", gene_expression_TPM.dt$sample_id)
+colnames(gene_expression_TPM.dt) <- c("gene", "sample_id", "reads")
+
+# colnames(gene_expression_TPM_normal) <- gsub("-", "_", colnames(gene_expression_TPM_normal))
+# gene_expression_TPM_normal.dt <- gene_expression_TPM_normal %>% dplyr::select('Gene Name', meta.N$sample_id) %>% as.data.table() %>% 
+#   melt(id.vars = "Gene Name",  variable.name = "sample_id", value.name = "reads")
+# gene_expression_TPM_normal.dt $sample_id <-sub("C$", "", gene_expression_TPM_normal.dt $sample_id)
+# gene_expression_TPM_normal.dt $sample_id <-gsub(pattern = "-|/", replacement = "_", gene_expression_TPM_normal.dt $sample_id)
+# colnames(gene_expression_TPM_normal.dt ) <- c("gene", "sample_id", "reads")
+```
+
+```{r, include=FALSE}
+
+colData.d <- reliable.circrnas.tall.gtf[, .N, by = .(sample_id,
+                                                      sample_id3,
+                                                      condition)][, N := NULL][]
+colData <- data.frame(colData.d,
+                      row.names = "sample_id3")
+colData$condition <- factor(colData$condition)
+colData$condition <- gsub("_", "-", colData$condition)
+
+## add sex to colData
+meta_tall <- as.data.table(meta_tall)
+colData <- merge(colData, meta_tall[,.(sample_id, tissue, Age, Sex, RNAQuality, geneKD)], by="sample_id")
+rownames(colData) <- colData.d$sample_id3
+colData$sample_id3 <- colData.d$sample_id3
+colData$Age <- as.numeric(colData$Age)
+
+colData$facotrAge <- dplyr::case_when(colData$Age <= 17.9 ~ 'Pediatric',
+                  # between(colData$Age, 3, 17.9) ~ 'Child',
+                  between(colData$Age, 18, 85) ~ 'Adult'
+                  )
+colData.dt <- colData
+colData.dt$condition <- factor(colData.dt$condition, levels = tall.subsamples, ordered = T)
+colData.dt$geneKD <- as.factor(colData.dt$geneKD)
+
+# full matrix with each methods
+dds.full <- DESeqDataSetFromMatrix(countData = ceiling(count.matrix.tall[, colData.dt$sample_id3[order(colData.dt$condition)]]),
+                                   colData = colData.dt[order(colData.dt$condition),],
+                                   design = ~ geneKD)
+dds.full.vst <- varianceStabilizingTransformation(dds.full, fitType = "local", blind = F)
+norm.counts.full <- assay(dds.full.vst)
+```
+
+
+```{r, include=FALSE}
+
+count.matrix.dt <- dcast(gene_expression_TPM.dt, 
+                    formula = gene ~ sample_id, 
+                    value.var = "reads", 
+                    fun.aggregate = sum,
+                    fill = 0)
+
+colnames(count.matrix.dt) <- reliable.circrnas.tall.gtf$sample_id3[match(colnames(count.matrix.dt), reliable.circrnas.tall.gtf$sample_id)]
+
+# count.matrix.N.dt <- dcast(gene_expression_TPM_normal.dt, 
+#                     formula = gene ~ sample_id, 
+#                     value.var = "reads", 
+#                     fun.aggregate = sum,
+#                     fill = 0)
+count.matrix <- as.matrix(count.matrix.dt, 
+                          rownames = "gene")
+# count.matrix <- count.matrix[!rownames(count.matrix)%in%"PVT1",]
+# count.matrix.normal <- as.matrix(count.matrix.N.dt, 
+#                           rownames = "gene")[, meta.N$sample_id[order(meta.N$condition)]]
+```
+
+
+```{r}
+library(wesanderson)
+# set names of samples in tall cell 
+tall.subsamples <- c("IMM", "TLX3", "HOXA", "TLX1", "TAL-LMO")
+
+annotation_col <- colData.dt
+
+class.colors <-
+    setNames(c("#A0A0A0", "#3333FF"),
+             nm = levels(colData.dt$geneKD))
+condition.colors <- setNames(unique(intgroup.dt.tall[, hue]),
+                                                nm = unique(intgroup.dt.tall[, condition]))
+sample.colors <- setNames(intgroup.dt.tall[,hue], 
+                          nm = intgroup.dt.tall[,sample_id])
+
+sampcol.dt <- data.frame(sample.colors)
+
+col.dt <- merge(as.data.frame(meta_tall), sampcol.dt, by.x = 'sample_id', by.y = 'row.names')
+
+annotation_colors <- list(condition = condition.colors, 
+                          samples = sample.colors,
+                          geneKD = class.colors)
+
+intgroup.dt.tall$condition <- factor(intgroup.dt.tall$condition, levels = tall.subsamples, ordered = T)
+intgroup.dt.tall$class <- colData.dt$geneKD[match(intgroup.dt.tall$sample_id, colData.dt$sample_id3)]
+intgroup.dt.tall$class.color <- if_else(intgroup.dt.tall$class==paste0(geneofinterest, "_KD"), "#A0A0A0", "#3333FF")
+
+```
+
+
+```{r}
+min.count <- 20
+min.col <- 3
+
+filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
+# filt.mat["QKI",]
+colnames(filt.mat) <- colData$sample_id3[match(colnames(filt.mat), gsub("X", "", colData$sample_id))]
+
+
+# filt.mat.normal <- count.matrix.normal[rowSums(count.matrix.normal >= min.count) >= min.col, ]
+# colnames(filt.mat.normal) <- meta.N$condition[match(colnames(filt.mat.normal), meta.N$sample_id)]
+# filt.mat.normal["QKI",]
+
+```
+
+Data visualization 
+===============================
+
+Column
+-------
+
+### Filtered dataset
+
+We keep only genes with at least 20 reads in at least 3 samples healding reaching `r nrow(filt.mat)` genes.
+
+```{r eval=FALSE, include=FALSE}
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# 
+# BiocManager::install("Mus.musculus")
+```
+
+### Density of log-CPM values for raw post-filtered data
+
+```{r}
+library(edgeR)
+library(Mus.musculus)
+x <- DGEList(counts = filt.mat) 
+x$samples$group <- colData$geneKD
+x$samples$condition <- colData$condition
+x$samples$Age.f <- colData$factorAge
+x$samples$sex <- colData$Sex
+
+cpm <- cpm(x)
+lcpm <- cpm(x, log=T)
+
+plotDensities(lcpm, legend = FALSE, col = sample.colors, main = "After filtering", xlab = "log-cpm")
+abline(v = 0, lty = 3)
+
+dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
+                              colData = colData,
+                              design = ~ condition + Sex + facotrAge + geneKD)
+
+dds <- DESeq(dds, betaPrior = F, parallel = F, sfType = "poscount", useT = F, minmu = 1e-6,
+                      minReplicatesForReplace = Inf,test = "LRT", reduced = ~ condition + Sex) ## parameters for scRNA-seq
+norm.counts <- counts(dds, normalized = T)
+norm.counts.m <- melt(as.data.table(norm.counts, keep.rownames = "gene"),
+                   id.vars = "gene",
+                   variable.name = "sample_id",
+                   value.name = "norm.counts")
+
+```
+
+```{r}
+# plotDispEsts(dds, main = "Filtered dataset")
+
+```
+
+```{r eval=FALSE, include=FALSE}
+x <-  calcNormFactors(x, method = "TMM")
+lcpm <- cpm(x, log = TRUE)
+group = as.factor(colData$geneKD)
+col.group <- group
+levels(col.group) <-  class.colors
+col.group <- as.character(col.group)
+
+condition <- as.factor(colData$condition)
+col.condition <- colData$condition
+levels(col.condition) <- condition.colors[c(2,5,4,3,1)]
+col.condition <- as.character(col.condition)
+# limma::plotMDS(lcpm, labels = condition, col = col.condition, dim=c(2,3))
+# limma::plotMDS(lcpm, labels = group, col = col.group, dim=c(2,3))
+sex <- as.factor(colData$Sex)
+design <- model.matrix(~0+group+condition)
+colnames(design) <- gsub("groupPVT1_", "", colnames(design))
+colnames(design) <- gsub("-", "_", colnames(design))
+
+v <- voom(x, design = design, plot = FALSE)
+
+contr.matrix <- makeContrasts(
+  PVT1OEvsKD = OE-KD,
+  levels =  colnames(design)
+)
+
+vfit <- lmFit(v, design = design, plot = F)
+vfit <- contrasts.fit(vfit, contrasts = contr.matrix)
+efit <- eBayes(vfit)
+# plotSA(efit)
+# tfit <- treat(vfit, lfc = 1)
+# dt <- decideTests(tfit)
+# summary(dt)
+# summary(decideTests(efit))
+# plotMD(tfit, column = 1, status = dt[, 1], main = colnames(tfit)[1],
+#        xlim = c(-8, 13))
+```
+
+
+Column
+-------
+
+### Expression distribution
+
+```{r}
+med.rbe.m <- merge(norm.counts.m, 
+                   intgroup.dt.tall[, .(sample_id, condition, class)], 
+                   by = "sample_id")
+med.rbe.m$condition <- factor(med.rbe.m$condition, levels = tall.subsamples, ordered = T)
+```
+
+```{r}
+ggplot(data = med.rbe.m, 
+       mapping = aes(x = sample_id, y = norm.counts, 
+                     fill = sample_id)) + 
+    geom_boxplot(outlier.shape = NA) +
+    scale_y_log10(label = trans_format("log10", format = math_format())) +
+    facet_grid(facets = . ~ condition, drop = T, 
+               scales = "free_x", space = "free_x", 
+               labeller = label_wrap_gen(width = 5)) +
+    scale_fill_manual(guide = F,
+                      values = setNames(intgroup.dt.tall[, color],
+                                        nm = intgroup.dt.tall[, sample_id])) +
+    # scale_fill_viridis(guide = F, discrete = T, option = "C") +
+    xlab(NULL) +
+    ylab("Normalized read count") +
+    theme_bw() +
+    theme(panel.spacing = unit(0.1, "lines"), 
+          axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+### PCA of Normalized linear expression data by using variance stabilazing transformation
+
+```{r}
+rle <- varianceStabilizingTransformation(dds, fitType = "local", blind = T)
+# rle <- rlog(dds, fitType = "local", blind = F)
+```
+
+```{r}
+pca <- prcomp(x = t(assay(rle)), center = T)
+d <- data.frame(pca$x[rownames(colData), c("PC1", "PC2")], colData)
+
+d$expression <- assay(dds.full.vst)[row.names(assay(dds.full.vst))==circ_idofinterest, rownames(d)]
+
+# d$expression <- assay(rle)[rownames(rle)=="PVT1"]
+PC1.var <- summary(pca)$importance["Proportion of Variance", 1]
+PC2.var <- summary(pca)$importance["Proportion of Variance", 2]
+
+axistextsize = 14
+legendtextsize = 14
+
+ggplot(d, aes(PC1, PC2)) +
+  geom_point(aes(colour=expression),size=3) +
+  coord_equal() +
+  geom_text_repel(label=d$sample_id3) +
+  # stat_ellipse(type = "euclid",
+  #                level = .98,
+  #                show.legend = F) +
+  # scale_colour_gradientn(colours = terrain.colors(4))
+  scale_colour_gradient(low = "grey", high = "red") +
+  xlab(paste0("PC1: ", percent(PC1.var))) +
+  ylab(paste0("PC2: ", percent(PC2.var))) +
+  theme_bw() +
+  theme(text = element_text(size=10, family="sans"),
+        legend.position = "right",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.y = element_text(size = axistextsize, colour = "black"),
+        axis.text.x = element_text(size = axistextsize, colour = "black"),
+        axis.title.x = element_text(size = axistextsize),
+        axis.title.y = element_text(size = axistextsize),
+        legend.title = element_text(size = legendtextsize),
+        legend.text = element_text(size = legendtextsize)) +
+  ggtitle("PCA with relative normalized expression of circPVT1")
+
+```
+
+
+```{r eval=FALSE, include=FALSE}
+# Unsupervised Analysis 
+# ===============================
+### Most var heatmap
+# # ## most variables
+n.var.genes <- 200
+most.var.mat <- rle[order(rowVars(rle), decreasing = T)[1:n.var.genes], ]
+ 
+pca <- prcomp(x = t(most.var.mat), center = T)
+pheatmap(mat = most.var.mat, 
+         show_rownames = F, 
+         color = inferno(255),
+         annotation_col = annotation.col,
+         annotation_colors = annotation.colors,
+         clustering_distance_cols = "correlation",
+         main = paste0(n.var.genes, " most variable genes"))
+```
+
+
+```{r norm_filtmat, include=FALSE}
+## normalization 
+SE.100 <- SummarizedExperiment(assays = list(counts = ceiling(filt.mat)),
+                                                    colData = colData[,c(7,2,3,5,9)])
+names(colData(SE.100)) <- c("class","condition", "tissue", "Sex", "factorAge") 
+
+colData(SE.100)$class <- factor(colData(SE.100)$class, levels = levels(intgroup.dt.tall$class), ordered = T)
+colData(SE.100)$Tissue <- factor(colData(SE.100)$tissue)
+colData(SE.100)$factorAge <- factor(colData(SE.100)$factorAge)
+colData(SE.100)$Sex <- factor(colData(SE.100)$Sex)
+colData(SE.100)$condition <- factor(colData(SE.100)$condition, levels = tall.subsamples, ordered = T)
+
+data_norm.hc.100 <- DaMiR.normalization(SE.100, minCounts = 0, fSample = 0, hyper = "no", th.cv = 3, nFitType = "local")
+
+# dds.filt.med.vst <- varianceStabilizingTransformation(dds.filt, fitType = "local", blind = F)
+# save(data_norm.hc.100, file=file.path(out.dir, "/data_filt100%_norm.rda"))
+```
+
+```{r sv.plot.hc, fig.cap="High Filter data. This plot shows the relationship between each identified sv and the corresponding fraction of variance ex-plained. A specific blue dot represents the proportion of variance", include=FALSE}
+### High Confidence Filter
+mod <- model.matrix( ~ data_norm.hc.100@colData$class + data_norm.hc.100@colData$Sex + 
+                       data_norm.hc.100@colData$factorAge)
+mod0 <- cbind(mod[, 1])
+n.sv <- num.sv(assay(data_norm.hc.100), mod = mod, method = "be")
+svaobj <- sva(assay(data_norm.hc.100), mod, # n.sv.max,
+                         mod0, n.sv)
+sv_matrix <- as.matrix(svaobj$sv)
+
+# sv.hc.100 <- DaMi.SVAFB(data = data_norm.hc.100)
+data_adjust.hc.100 <- DaMiR.SVadjust(data_norm.hc.100, sv_matrix, n.sv = n.sv)
+```
+
+Exploring data
+=================
+
+HC 100
+-----------------
+
+### Filtered and Normalized Data
+
+
+```{r}
+DaMiR.AllplotAFB <- function (intgroup.dt, data, df, type ="spearman") 
+{
+  if (missing(data)) 
+    stop("'data' argument must be provided")
+  if (missing(df)) 
+    stop("'df' argument must be provided")
+  if (missing(type)) {
+    type <- type[1]
+  }
+  if (!(is(data, "SummarizedExperiment") | is.data.frame(data) | 
+        is.matrix(data))) 
+    stop("'data' must be a 'matrix', a 'data.frame'\n         or a 'SummarizedExperiment' object")
+  if (!(is(df, "DataFrame") | is.data.frame(df))) 
+    stop("'df' must be a data.frame")
+  if (is(data, "SummarizedExperiment")) {
+    count_data <- assay(data)
+  }
+  else {
+    count_data <- as.matrix(data)
+  }
+  df <- as.data.frame(df)
+  if (any(is.na(count_data))) 
+    stop("NA values are not allowed in the 'data' matrix")
+  if (any(is.infinite(count_data))) 
+    stop("Inf values are not allowed in the 'data' matrix")
+  if (!("class" %in% colnames(df))) 
+    stop("'class' info is lacking!\n         Include the variable 'class'\n         in the 'df' data frame and label it 'class'!")
+  if (all((count_data%%1) == 0)) 
+    stop("This function works with normalized count data")
+  if (dim(count_data)[2] != dim(df)[1]) 
+    stop("ncol(assay(data)) must be equal to nrow(df)")
+  if (length(type) > 1) 
+    stop("length(type) must be equal to 1")
+  if (!(all(type %in% c("pearson", "spearman")))) 
+    stop("'type' must be 'pearson' or 'spearman'")
+  # colors <- colorRampPalette(rev(brewer.pal(9, "RdYlGn")))(255)
+  if (type == "spearman") {
+    mydist <- as.dist(1 - cor(count_data, method = "spearman"))
+  }
+  else if (type == "pearson") {
+    mydist <- as.dist(1 - cor(count_data, method = "pearson"))
+  }
+  else {
+    stop("Please set 'spearman or 'pearson' as correlation type.")
+  }
+  sampleDistMatrix <- as.matrix(mydist)
+  seque <- seq(min(sampleDistMatrix), max(sampleDistMatrix), 
+               by = max(sampleDistMatrix)/100)
+  # samples_order <- rownames(colData[order(colData$condition),])
+  pheatmap(sampleDistMatrix, clustering_distance_rows = mydist, clustering_method = "ward.D2",
+           clustering_distance_cols = mydist, color = viridis(100), fontsize_col = 7, fontsize_row = 7,#breaks = seque,
+           annotation_colors = annotation_colors, 
+           annotation_col = annotation_col[,"condition",drop = F],
+           annotation_row = annotation_col[,"geneKD", drop = F])
+  mdsData <- data.frame(cmdscale(sampleDistMatrix))
+  mds <- cbind(mdsData, df)
+  print(ggplot(mds, aes(X1, X2, color = mds$class)) +
+          geom_point(size = 3) + #geom_text_repel(aes(label = rownames(mds)), 
+          #                                        hjust = 0.5, vjust = -1) + 
+          scale_color_manual(colnames(mds[, 3, drop = FALSE]),
+                             guide = guide_legend(title.position = "top",
+                                                  ncol = 5,
+                                                  title.hjust = .5),
+                             values = setNames(intgroup.dt[, class.color],
+                                               nm = intgroup.dt[, class])) + 
+          ggtitle(paste("Variable: ", colnames(mds[, 3, drop = FALSE]))) + 
+          theme(legend.position="bottom") + coord_equal(ratio=1))
+  
+  mds <- cbind(mdsData, df)
+  cov_list <- mds[, 4, drop = FALSE]
+  colnames(cov_list) <- "Vars"
+
+  print(ggplot(mds, aes(X1, X2, shape = mds$class, color = cov_list$Vars)) +
+          geom_point(size = 3) + #geom_text_repel(aes(label = rownames(mds)),
+          #hjust = 0.5, vjust = -1) +
+          scale_colour_manual(name = colnames(mds[, 4, drop = FALSE]),
+                              values = setNames(intgroup.dt[, hue],
+                                                nm = intgroup.dt[, condition]),
+                              guide = guide_legend(title.position = "top",
+                                                   ncol = 2,
+                                                   title.hjust = .5)) +
+          # scale_colour_viridis_d(name = colnames(mds[, i + 3, drop = FALSE]), alpha = .75, option = "A",
+          #                        end = .9,
+          #                        guide = guide_legend(title.position = "top",
+          #                                             ncol = 2,
+          #                                             title.hjust = .5)) +
+          scale_shape_manual(name = colnames(mds[, 3, drop = FALSE]),
+                             guide = guide_legend(title.position = "top",
+                                                  ncol = 5,
+                                                  title.hjust = .5), values= seq(15,20,by=2)) +
+          ggtitle(paste("Variable: ",
+                        colnames(mds[, 4, drop = FALSE]))) +
+          theme(legend.position="bottom") + coord_equal(ratio=1/1))
+  
+  for (i in seq_len(ncol(df)-2)) {
+    # i = 1
+    mds <- cbind(mdsData, df)
+    cov_list <- mds[, i + 4, drop = FALSE]
+    colnames(cov_list) <- "Vars"
+    NA_idx <- which(is.na(cov_list$Vars))
+    if (length(NA_idx) != 0) {
+      cov_list <- cov_list[-NA_idx, , drop = FALSE]
+      mds <- mds[-NA_idx, ]
+      cat("MDS:", length(NA_idx), "samples not drawn (because 'NA') for variable:", 
+          colnames(df)[i], "\n")
+    }
+    
+    print(ggplot(mds, aes(X1, X2, shape = mds$class, color = cov_list$Vars )) +
+            geom_point(size = 3) + #geom_text_repel(aes(label = rownames(mds)), 
+                                                   #hjust = 0.5, vjust = -1) + 
+            scale_colour_brewer(palette = "Dark2", name = colnames(mds[, i + 4, drop = FALSE]), 
+                                                    guide = guide_legend(title.position = "top",
+                                                     ncol = 2,
+                                                     title.hjust = .5)) +
+            # scale_colour_viridis_d(name = colnames(mds[, i + 3, drop = FALSE]), alpha = .75, option = "A",
+            #                        end = .9,
+            #                        guide = guide_legend(title.position = "top",
+            #                                             ncol = 2,
+            #                                             title.hjust = .5)) +
+            scale_shape_manual(name = colnames(mds[, 4, drop = FALSE]),
+                               guide = guide_legend(title.position = "top",
+                                                    ncol = 5,
+                                                    title.hjust = .5), values= seq(10, 20, by=2)) +
+            ggtitle(paste("Variable: ", 
+                          colnames(mds[, i + 4, drop = FALSE]))) + 
+            theme(legend.position="bottom") + coord_equal(ratio=1/1))
+  }
+  # colors <- brewer.pal(8, "Set2")
+  EDASeq::plotRLE(count_data[,rownames(df)[order(df$condition)]], #k = 2,  
+                  labels = TRUE, 
+                  isLog = TRUE, 
+                  outline = F, 
+                  col = sample.colors[match(colnames(count_data[,rownames(df)[order(df$condition)]]), names(sample.colors))], 
+                  main = "Relative Log Expression")
+}
+```
+
+```{r allplot.hc.100}
+# After gene filtering HC and normalization
+DaMiR.AllplotAFB(intgroup.dt = intgroup.dt.tall, data = data_norm.hc.100, df = colData(data_norm.hc.100))
+
+```
+
+Adjusted data 100
+-----------------
+
+### Filtered, Normalized and Adjusted data
+
+```{r allplot.adj100}
+# After circ filtering and normalization and adjustment
+DaMiR.AllplotAFB(intgroup.dt = intgroup.dt.tall, data_adjust.hc.100, colData(data_adjust.hc.100))
+
+```
+
+PCA
+=================
+
+100%
+-----------------
+
+### Filtered Normalized and Removed Batch effect
+
+```{r }
+batch1 <- colData$facotrAge
+batch2 <- colData$tissue
+batch3 <- colData$Sex
+batch4 <- colData$condition
+
+covariates <- model.matrix(~batch1+batch2+batch3+batch4)
+covariates <- covariates[,-1]
+rbe <- removeBatchEffect(x = assay(rle)[, rownames(colData)], 
+                         covariates = covariates, 
+                         design = model.matrix( ~ geneKD, data = colData))
+
+pca <- prcomp(x = t(rbe), center = T)
+
+# # ## most variables
+# n.var.genes <- 500
+# most.var.mat <- rbe[order(rowVars(rbe), decreasing = T)[1:n.var.genes], ]
+# 
+# pca <- prcomp(x = t(most.var.mat), center = T)
+
+d <- data.frame(pca$x[rownames(colData), c("PC1", "PC2")], colData)
+
+d$geneKD <- factor(d$geneKD)
+PC1.var <- summary(pca)$importance["Proportion of Variance", 1]
+PC2.var <- summary(pca)$importance["Proportion of Variance", 2]
+```
+
+```{r }
+g1 <- ggplot(data = d, 
+       mapping = aes(x = PC1, y = PC2, color = geneKD)) +
+    geom_point(size = 4) +
+    geom_text_repel(label=d$sample_id3) +
+    # geom_rug(show.legend = F) +
+    coord_fixed(ratio = 1) +
+    scale_color_manual("PVT1",
+                       guide = guide_legend(title.position = "top",
+                                            ncol = 3,
+                                            title.hjust = .5),
+                       values = setNames(intgroup.dt.tall[, class.color],
+                                                nm = intgroup.dt.tall[, class])) +
+    xlab(paste0("PC1: ", percent(PC1.var))) +
+    ylab(paste0("PC2: ", percent(PC2.var))) +
+    # ggtitle(paste0(n.var.genes, " most variable genes")) +
+    theme_classic() + 
+    theme(legend.position = "bottom", 
+          # panel.background = element_rect(fill = "black"), 
+          plot.title = element_text(hjust = .5))
+```
+
+```{r }
+library(factoextra)
+#### compute contribution 
+contrib <- function(ind.coord, comp.sdev, n.ind){
+  100*(1/n.ind)*ind.coord^2/comp.sdev^2
+}
+ind.contrib <- t(apply(pca$x, 1, contrib, 
+                       pca$sdev, nrow(pca$x)))
+g3 <- fviz_contrib(pca, choice="var", axes = 1:3, top = 8)
+
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# 
+# BiocManager::install("pcaExplorer")
+
+# dt <- as.data.frame(cbind(circ_to_genes$gene_names))
+# colnames(dt) <- c("gene_names")
+# rownames(dt) <- circ_to_genes$circ_id
+
+library(pcaExplorer)
+hi.loadings <- hi_loadings(pca, whichpc = 1, topN = 10, exprTable = dds,
+  # annotation =  dt, 
+  title = "Top/bottom loadings")
+# hi_loadings(pca, whichpc = 1, topN = 10, exprTable = NULL,
+#   # annotation =  dt, 
+#   title = "Top/bottom loadings")
+
+# head(ind.contrib[, 1:4])
+
+# library(factoextra)
+# fviz_pca_ind(pca,
+#              col.ind = "cos2", # Color by the quality of representation
+#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#              repel = TRUE     # Avoid text overlapping
+#              )
+
+# fviz_pca_var(pca.rbe,
+#              col.var = "contrib", # Color by contributions to the PC
+#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#              repel = TRUE     # Avoid text overlapping
+#              )
+
+# groups <- colData(data_norm.hc.100)$class
+# condition <- colData(data_norm.hc.100)$condition
+# fviz_pca_ind(pca,
+#              col.ind = groups, # color by groups
+#              # palette = c("#00AFBB",  "#FC4E07"),
+#              addEllipses = TRUE, # Concentration ellipses
+#              ellipse.type = "confidence",
+#              legend.title = "Groups",
+#              repel = TRUE, 
+#              axes = c(2,3)
+#              )
+```
+
+
+```{r}
+library(ggpubr)
+
+ggpubr::ggarrange(ggarrange(g1, g3, ncol = 2, labels = c("A", "B")), # Second row with box and dot plots
+          # ggarrange(g3, ncol = 1, labels = c("B")), # First row with scatter plot
+          nrow = 1
+          # labels = "C"                                        # Labels of the scatter plot
+          )
+
+```
+
+Column
+-----------------------------------
+
+### PCA of normalized and removed batch effect of linear expression (with relative normalized expression of circPVT1) 
+
+```{r}
+
+d$expression <- assay(dds.full.vst)[row.names(assay(dds.full.vst))==circ_idofinterest, rownames(d)]
+
+med.PC1.var <- summary(pca)$importance["Proportion of Variance", 1]
+med.PC2.var <- summary(pca)$importance["Proportion of Variance", 2]
+
+axistextsize = 14
+legendtextsize = 14
+
+ggplot(d, aes(PC1, PC2)) +
+  geom_point(aes(colour=expression),size=3) +
+  coord_equal() +
+  geom_text_repel(label=d$sample_id3) +
+  # stat_ellipse(type = "euclid",
+  #                level = .98,
+  #                show.legend = F) +
+  # scale_colour_gradientn(colours = terrain.colors(4))
+  scale_colour_gradient(low = "grey", high = "red") +
+  xlab(paste0("PC1: ", percent(med.PC1.var))) +
+  ylab(paste0("PC2: ", percent(med.PC2.var))) +
+  theme_bw() +
+  theme(text = element_text(size=10, family="sans"),
+        legend.position = "right",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.y = element_text(size = axistextsize, colour = "black"),
+        axis.text.x = element_text(size = axistextsize, colour = "black"),
+        axis.title.x = element_text(size = axistextsize),
+        axis.title.y = element_text(size = axistextsize),
+        legend.title = element_text(size = legendtextsize),
+        legend.text = element_text(size = legendtextsize)) +
+  ggtitle("PCA with relative normalized expression of circPVT1")
+
+```
+
+
+Feauture selection 
+=================
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+- The previous step(s) returned a fully filtered, normalized, adjusted expression matrix with the effect of sv removed. 
+- However, the number of features in the dataset is still high and greatly exceeds the number of observations. 
+- We have to deal, here, with the well-known issue for high-dimensional data known as the “curse of dimensionality”. 
+- Adding noise features that are not truly associated with the response (condition) may lead, in fact, to a worsening model accuracy.
+
+
+### Variable selection in Partial Least Squares (PLS)
+
+The first step exclude all non-informative class-related features using a backward variable elimination procedure: 
+
+- First a principal component analysis (PCA) is carried out to identify principal components (PCs) that correlate with “condition”.
+- The higher the correlation, the lower the number of PCs returned. 
+
+```{r include=FALSE}
+data_clean <- DaMiR.transpose(rbe)
+df <- colData(data_adjust.hc.100)
+set.seed(12345)
+data_reduced <- DaMiR.FSelect(data_clean, df, th.corr=0.4, type = "pearson")
+data_reduced <- data_reduced$data
+# data_reduced.corr <- DaMiR.FReduct(data_clean)
+# save(data_reduced, file = file.path(out.dir, "/data_reduced.rda"))
+```
+
+### MDS plot
+
+```{r mds_pls, fig.cap="A MDS plot is drawn, considering only most informative circRNAs, obtained after feature selection in Partial Least Squares: color code is referred to ’class’."}
+
+DaMiR.MDSplotAFB(intgroup.dt = intgroup.dt.tall, data_reduced, df)
+```
+
+
+The number of circRNAs remained is `r ncol(data_reduced)`
+
+
+```{r}
+### PCA on reduced data
+## run PCA dim reduction
+
+pca.red <- prcomp(x = data_reduced, center = T)
+#### compute contribution 
+contrib <- function(ind.coord, comp.sdev, n.ind){
+  100*(1/n.ind)*ind.coord^2/comp.sdev^2
+}
+
+ind.contrib <- t(apply(pca.red$x, 1, contrib, 
+                       pca.red$sdev, nrow(pca.red$x)))
+
+## contrinu to first 3 dimension of top 7 circRNAs
+# fviz_contrib(pca.red, choice="var", axes = 1:3, top = 8)
+# library(factoextra)
+# fviz_pca_ind(pca.red, axes = c(1,2),
+#              col.ind = "cos2", # Color by the quality of representation
+#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#              repel = TRUE     # Avoid text overlapping
+# )
+
+```
+
+```{r mds.hcor, include=FALSE}
+# DaMiR.MDSplotAFB(intgroup.dt = intgroup.dt, data_reduced.corr, df)
+
+library(ggbiplot)
+
+nobs.factor <- sqrt(nrow(pca.red$x) - 1)
+d <- pca.red$sdev
+u <- sweep(pca.red$x, 2, 1 / (d * nobs.factor), FUN = '*')
+v <- pca.red$rotation
+
+# Scores
+choices = 1:2
+choices <- pmin(choices, ncol(u))
+obs.scale = 1
+df.u <- as.data.frame(sweep(u[,choices], 2, d[choices]^obs.scale, FUN='*'))
+
+# Directions
+var.scale  = 1
+v <- sweep(v, 2, d^var.scale, FUN='*')
+df.v <- as.data.frame(v[, choices])
+
+names(df.u) <- c('xvar', 'yvar')
+names(df.v) <- names(df.u)
+
+#pc.biplot=T
+df.u <- df.u * nobs.factor
+
+# Scale the radius of the correlation circle so that it corresponds to 
+# a data ellipse for the standardized PC scores
+r <- sqrt(qchisq(0.85, df = 2)) * prod(colMeans(df.u^2))^(1/4)
+
+# Scale directions
+v.scale <- rowSums(v^2)
+df.v <- r * df.v / sqrt(max(v.scale))
+
+# Change the labels for the axes
+u.axis.labs <- paste('PC', choices, sep='')
+
+
+# Append the proportion of explained variance to the axis labels
+u.axis.labs <- paste(u.axis.labs, 
+                     sprintf('(%0.1f%% explained var.)', 
+                             100 * pca.red$sdev[choices]^2/sum(pca.red$sdev^2)))
+
+# Score Labels
+# if(!is.null(labels)) {
+#   df.u$labels <- labels
+# }
+
+# Grouping variable
+df.u$groups <- colData$geneKD
+
+# Variable Names
+df.v$varname <- rownames(v)
+
+# Variables for text label placement
+df.v$angle <- with(df.v, (180/pi) * atan(yvar / xvar))
+df.v$hjust = with(df.v, (1 - 1.5 * sign(xvar)) / 2)
+
+# Base plot
+g <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + 
+  xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal()
+
+theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, length = 50))
+circle <- data.frame(xvar = r * cos(theta), yvar = r * sin(theta))
+g <- g + geom_path(data = circle, color = muted('white'), 
+                       size = 1/2, alpha = 1/3)
+
+# Draw directions
+g <- g +
+  geom_segment(data = df.v,
+               aes(x = 0, y = 0, xend = xvar, yend = yvar),
+               arrow = arrow(length = unit(1/2, 'picas')), 
+               color = muted('red'))
+
+
+# Draw either labels or points
+g <- g + geom_point(aes(colour = colData$PVT1), size = 0.05) +
+         scale_colour_manual(name="PVT1 KD", values = setNames(intgroup.dt.tall[, class.color], nm = intgroup.dt.tall[, class])) 
+
+# Overlay a concentration ellipse if there are groups
+theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, length = 50))
+circle <- cbind(cos(theta), sin(theta))
+  
+ell <- ddply(df.u, 'groups', function(x) {
+  if(nrow(x) <= 2) {
+    return(NULL)
+    }
+    sigma <- var(cbind(x$xvar, x$yvar))
+    mu <- c(mean(x$xvar), mean(x$yvar))
+    ed <- sqrt(qchisq(0.68, df = 2))
+    data.frame(sweep(circle %*% chol(sigma) * ed, 2, mu, FUN = '+'), 
+               groups = x$groups[1])
+  })
+names(ell)[1:2] <- c('xvar', 'yvar')
+g <- g + geom_path(data = ell, aes(color = groups, group = groups))
+
+# Label the variable axes
+g <- g + 
+    geom_text_repel(data = df.v, 
+              aes(label = varname, x = xvar, y = yvar, 
+                  angle = angle, hjust = hjust), 
+              color = 'darkred', size = 3)
+g <- g + 
+    theme_minimal() +
+    theme(text = element_text(size=10, family="sans"),
+          legend.title = element_text(size=8),
+          legend.text = element_text(size = 10),
+          legend.position = "bottom")
+g
+
+
+
+```
+
+### Ranking and selecting features
+
+- We have to produce a reduced matrix of variables
+- The number of reduced variables might be too high to provide faster and cost-effective classification models
+- Accordingly, we should properly select a subset of the most informative features by ranking features by their importance basing on a distance between instances 
+
+
+```{r imp.circ}
+
+# class(circ_to_genes)
+data_red <- data_reduced
+
+```
+
+```{r include=FALSE}
+# Rank genes by importance:
+df.importance <- DaMiR.FSort(data = data_red, df = df, fSample = 1)
+selected_features <- DaMiR.FBest(data_red, ranking = df.importance, n.pred = ncol(data_red))
+
+```
+
+### Heatmap of selected features
+
+```{r}
+DaMiR.ClustplotAFB <- function (data, df, type_row = c("euclidean", "correlation"), 
+          type_col = c("euclidean", "correlation"), names = TRUE) 
+{
+  if (missing(data)) 
+    stop("'data' argument must be provided")
+  if (missing(df)) 
+    stop("'df' argument must be provided")
+  if (missing(type_row)) {
+    type_row <- type_row[1]
+  }
+  if (missing(type_col)) {
+    type_col <- type_col[1]
+  }
+  if (!(is(data, "SummarizedExperiment") | is.data.frame(data) | 
+        is.matrix(data))) 
+    stop("'data' must be a 'matrix', a 'data.frame'\n         or a 'SummarizedExperiment' object")
+  if (!(is(df, "DataFrame") | is.data.frame(df))) 
+    stop("'df' must be a data.frame")
+  if (is(data, "SummarizedExperiment")) {
+    count_data <- assay(data)
+  }
+  else {
+    count_data <- t(data)
+  }
+  df <- as.data.frame(df)
+  if (any(is.na(count_data))) 
+    stop("NA values are not allowed in the 'data' matrix")
+  if (any(is.na(df))) 
+    stop("NA values are not allowed in the 'df' matrix")
+  if (any(is.infinite(count_data))) 
+    stop("Inf values are not allowed in the 'data' matrix")
+  if (!("class" %in% colnames(df))) 
+    stop("'class' info is lacking!\n         Include the variable 'class'\n         in the 'df' data frame and label it 'class'!")
+  if (all((count_data%%1) == 0)) 
+    stop("This function works with normalized count data")
+  if (dim(count_data)[2] != dim(df)[1]) 
+    stop("ncol(assay(data)) must be equal to nrow(df)")
+  if (type_row == "euclidean") {
+    d_r <- "euclidean"
+  }
+  else if (type_row == "correlation") {
+    d_r <- "correlation"
+  }
+  else {
+    stop("Please set 'euclidean' or 'correlation' as distance type.")
+  }
+  if (type_col == "euclidean") {
+    d_c <- "euclidean"
+  }
+  else if (type_col == "correlation") {
+    d_c <- "correlation"
+  }
+  else {
+    stop("Please set 'euclidean' or 'correlation' as distance type.")
+  }
+  colors <- colorRampPalette(rev(brewer.pal(9, "RdYlGn")))(255)
+  pheatmap(count_data, clustering_distance_rows = d_r, clustering_distance_cols = d_c, #kmeans_k = 4,
+           scale = "row", clustering_method = "ward.D2", color = colorRampPalette(c("blue","white","red"))(30), annotation_colors = annotation_colors, 
+           annotation_col = annotation_col[,"geneKD",drop = F], show_rownames = names)
+}
+```
+
+
+```{r clustdend.selected}
+
+# Dendrogram and heatmap:
+plot.dt <- selected_features$data
+DaMiR.ClustplotAFB(plot.dt, df, type_row = "euclidean", type_col = "correlation", names = FALSE)
+selected.gene.txt.basename <- "selected_lineargene_ids.txt"
+selected.gene.txt <- file.path(out.dir, selected.gene.txt.basename)
+# writeLines(text = colnames(plot.dt),
+#            con = selected.circ.txt)
+```
+
+### Info
+
+- `r ncol(data_reduced)` genes were selected
+
+- Selected genes IDs were saved in <a href="`r selected.gene.txt.basename`">`r selected.gene.txt.basename`</a>
+
+
+Classification
+=================
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### Classification results 
+
+```{r }
+library(randomForest)
+datasetClasses <- df$class[,drop=F]
+class_level <- levels(datasetClasses)
+tr_sample <- round(dim(data_red)[1])
+trainingSet <- data_red[, , drop = FALSE]
+trainingSetClasses <- df$class[match(rownames(trainingSet), rownames(df))]
+trainingSetClasses <- droplevels(trainingSetClasses)
+trainingSet_DM <- cbind(trainingSet, trainingSetClasses)
+varNames <- colnames(trainingSet)
+colnames(trainingSet_DM) <- c(varNames, "classes")
+varNames1 <- paste(varNames, collapse = "+")
+formula_DM <- as.formula(paste("classes", varNames1, 
+                                   sep = " ~ "))
+trainingSet_DM <- as.data.frame(trainingSet_DM)
+trainingSet_DM$classes <- factor(trainingSet_DM$classes, labels=c("PVT1_KD", "PVT1_OE"), ordered = T)
+# summary(trainingSet_DM)
+rf <- randomForest(formula = formula_DM, data = trainingSet_DM, 
+                               ntree = 1000, importance = TRUE)
+#varImpPlot(rf)
+
+```
+
+```{r }
+VI <- importance(rf)
+VI.mat <- as.data.frame(VI)
+VI.mat <- round(VI.mat, 4)
+VI.mat <- VI.mat[order(VI.mat$MeanDecreaseAccuracy, decreasing = T),]
+VI.mat <- as.data.table(VI.mat)
+r <- rownames(VI)
+VI.mat$gene <- r
+
+# VI.mat
+VI.mat %>% 
+  mutate_if(is.numeric, function(x) {
+    cell_spec(x, bold = T, 
+              color = spec_color(x, end = 0.9),
+              font_size = spec_font_size(x))
+  }) %>%
+  # mutate(Species = cell_spec(
+  #   Species, color = "white", bold = T,
+  #   background = spec_color(1:10, end = 0.9, option = "A", direction = -1)
+  # )) %>%
+  kable(escape = F, align = "c", row.names = F, caption = "Table of all circRNAs used for classification of T-ALL subgroups. For each class of response variable there is a OOB error rate of classification. In the 5th column there is a measure of importance of variable in classification. In the last column there is the importance of the variable in the growing of the the random forest") %>%
+  kable_styling(c("striped"), full_width = F)
+
+```
+
+
+### Heatmap 
+
+```{r heatmap.de, fig.cap="Heatmap using top 28 circular RNAs used by Random Forest classification model"}
+data.plot <- data_red
+
+count_data <- t(data.plot)
+pheatmap(count_data, clustering_distance_rows = "correlation",
+         clustering_distance_cols = "correlation", 
+         clustering_method = "ward.D2",
+         show_rownames = T,
+         # kmeans_k = 2,
+         scale = "row", 
+         cutree_rows = 2,
+         color = colorRampPalette(c("blue","white","red"))(30), 
+         fontsize_row = (9 - nrow(count_data) / 15),
+         annotation_colors = annotation_colors, 
+         annotation_col = as.data.frame(annotation_col[,c("geneKD", "condition"), drop = F]))
+
+```
+
+### Cluster by RF 
+
+```{r clusterRF, fig.cap="Clustering using RF proximity estimates. Principal Component analyses using selected CircRNAs"}
+library(metricsgraphics)
+tall.pc <- prcomp(data_red, center = FALSE, scale. = FALSE)$x %>% as.data.frame()
+km.cluster <- kmeans(data_red, centers = 2, iter.max = 20, nstart = 2)
+tall.pc$kmeans.cluster <- km.cluster$cluster
+tall.pc <- merge(tall.pc, colData, by.x="row.names", by.y="row.names")
+# table(trainingSet_DM$classes, km.cluster$cluster)
+
+rf.fit <- randomForest(formula = formula_DM, data = trainingSet_DM, 
+                               ntree = 1000, proximity = TRUE, oob.prox = TRUE)
+
+# rf.fit <- randomForest(x = data_red, y = NULL, ntree = 500, proximity = TRUE, oob.prox = TRUE)
+hclust.rf <- hclust(as.dist(1-rf.fit$proximity), method = "ward.D2")
+rf.cluster = cutree(hclust.rf, k=2)
+tall.pc$rf.clusters <- rf.cluster
+# table(tall.pc$rf.clusters, tall.pc$condition)
+
+PC1.var <- summary(prcomp(data_red, center = FALSE, scale. = FALSE))$importance["Proportion of Variance", 1]
+PC2.var <- summary(prcomp(data_red, center = FALSE, scale. = FALSE))$importance["Proportion of Variance", 2]
+tall.pc$geneKD <- factor(tall.pc$geneKD, levels = levels(intgroup.dt.tall$class), ordered = T)
+
+ggplot(data = tall.pc, 
+       mapping = aes(x = PC1, y = PC2, color = as.factor(kmeans.cluster))) +
+    geom_point(size = 5, aes(shape = as.factor(geneKD))) +
+    coord_fixed(ratio = 0.4) +
+    scale_shape_manual(name = "Condition",  guide = guide_legend(title.position = "top", 
+                                                                 ncol = 2,
+                                                                 title.hjust = .5),
+                       values=c(15, 16, 17, 18, 13)) +
+    scale_color_manual("RF clusters",
+                       guide = guide_legend(title.position = "top",
+                                            ncol = 2,
+                                            title.hjust = .5),
+                       values = c("brown1", "cyan3", "darkgoldenrod1", "darksalmon", "darkolivegreen4")) +
+    xlab(paste0("principal comp 1: ", percent(PC1.var))) +
+    ylab(paste0("principal comp 2: ", percent(PC2.var))) +
+    theme_classic() +
+    theme(legend.position = "bottom")
+
+# mjs_plot(tall.pc, x=PC1, y=PC2, width=600, height=400) %>%
+#   mjs_point(color_accessor=rf.clusters) %>%
+#   mjs_labs(x="principal comp 1", y="principal comp 2")
+
+```
+
+### Variable importance
+
+- gini_decrease =  GINI importance measures the average gain of purity by splits of a given variable. If the variable is useful, it tends to split mixed labeled nodes into pure single class nodes
+- accuracy_decrease = measure of the suitability of the variable as predictor
+- times_a_root = total number of trees in which X_{j} is used for splitting the root node (i.e., the whole sample is divided into two based on the value of X_{j})
+- mean_min_depth = measures the important risk factors by averagingthe depth of the first split for each variable over all trees within the forest.  Lower values of this measure indicate variables important in splitting large groups of patients
+- The size of points reflects the number of nodes split on the variable
+- 10 top variables in the plot are highlighted in blue and labeled – these are selected usingthe sum of rankings based on importance measures used in the plot
+
+In both cases the two measures used as coordinates seem correlated. In the Accuracy and Gini decrease index plot one measure is connected to the structure of the forest and the other to its prediction, whereas in the mean minimal depth plot both measures reflected the structure. 
+
+Row
+--------------------
+
+### Accuracy and Gini decrease index {data-width=400}
+
+```{r multi_plot_RF }
+library(randomForestExplainer)
+min_depth_frame <- min_depth_distribution(rf)
+# plot_min_depth_distribution(min_depth_frame)
+# plot_min_depth_distribution(min_depth_frame, mean_sample = "relevant_trees", k = 15)
+importance_frame <- measure_importance(rf)
+
+imp.plot <- importance_frame
+
+plot_multi_way_importanceAFB(imp.plot, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
+                          size_measure = "no_of_nodes", no_of_labels = 5)
+
+```
+
+
+Row
+--------------------
+
+### Mean minimal depth {data-width=400}
+
+```{r}
+plot_multi_way_importanceAFB(imp.plot, size_measure = "no_of_nodes")
+
+```
+
+
+Clustering circRNAs
+=================
+
+- Selection of most variable circRNAs (n = 200)
+
+```{r meanVarSelection}
+dt <- rbe[order(rowVars(rbe), decreasing = T)[1:200], ]
+
+```
+
+Choice of K
+--------------------------
+
+### Choice of K
+
+Different measures has been used to choice the right value of K:
+
+- Within groups sum of squares
+
+- Silouhette
+
+
+```{r eval=FALSE, include=FALSE}
+# dt <- t(selected_features$data)
+## Within groups sum of squares
+wss <- (nrow(dt)-1)*sum(apply(dt,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(dt,
+                                     centers=i)$withinss)
+plot(1:20, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+
+# wss <- (nrow(dt.full)-1)*sum(apply(dt.full,2,var))
+# for (i in 2:20) wss[i] <- sum(kmeans(dt.full,
+#                                      centers=i)$withinss)
+# plot(1:20, wss, type="b", xlab="Number of Clusters",
+#      ylab="Within groups sum of squares")
+```
+
+```{r eval=FALSE, include=FALSE}
+## Silhouette
+library(cluster)
+sil <- rep(0, 20)
+#repeat k-means for 1:20 and extract silhouette:
+for(i in 2:20){
+  k1to20 <- kmeans(dt, centers = i, nstart = 25, iter.max = 20)
+  ss <- silhouette(k1to20$cluster, dist(dt))
+  sil[i] <- mean(ss[, 3])
+}
+# Plot the  average silhouette width
+plot(1:20, sil, type = "b", pch = 19, xlab = "Number of clusters k", ylab="Average silhouette width")
+abline(v = which.max(sil), lty = 2)
+cat("Average silhouette width optimal number of clusters:", which.max(sil), "\n")
+
+```
+
+### GAP statistic criterio
+
+The gap statistic compares the total within intracluster variation for different values of k with their expected values under null reference distribution of the data. The estimate of the optimal clusters will be the value that maximize the gap statistic (i.e, that yields the largest gap statistic). This means that the clustering structure is far away from the random uniform distribution of points.
+
+
+```{r gap_stat, include=FALSE}
+library("factoextra")
+fviz_nbclust(dt, kmeans, method = "gap_stat")
+
+```
+
+### GAP STATISTIC plot
+
+```{r choiceK, fig.cap="The Calinski-Harabasz index is based on the intra and inter cluster sum of squares. So we are looking to maximize the index to find well separated clusters. To do this we repeatedly cluster the data then look how the genes partition themselves with increasing K"}
+
+### Calinsky criterion
+# Take a look at the plot on the left. It shows how each of the circRNAs are partitioned with an increasing number of clusters. You can see how different sub structures develop as more clusters are added. On the right we see the maximum CH index is for 2 clusters but also that the indices for 3 and 4 are still quite high so those are appropriate.
+### Calinsky criterion Plot
+
+library(vegan)
+fit <- cascadeKM(dt, 1, 10, iter = 100)
+plot(fit, sortg = TRUE, grpmts.plot = TRUE)
+calinski.best <- as.numeric(which.max(fit$results[2,]))
+# cat("Calinski criterion optimal number of clusters:", calinski.best, "\n")
+# library(vegan)
+# fit.full <- cascadeKM(dt.full, 1, 20, iter = 100)
+# plot(fit.full, sortg = TRUE, grpmts.plot = TRUE)
+# calinski.best <- as.numeric(which.max(fit.full$results[2,]))
+```
+
+Hierarchical Clustering
+--------------------------
+
+### Hierarchical Clustering
+
+It’s possible to use hierarchical clustering to provide insight into the optimum number of K clusters. The easiest way to do this is to perform the clustering then plot a heatmap and look for the clusters ‘by eye’.
+
+### Hierarchical Clustering Plot
+
+```{r }
+library(gplots)
+#make the matrix
+dist <- cor(t(dt), method="pearson")
+#make the tree
+hr <- hclust(as.dist(1-dist), method="ward.D2") # Cluster rows by Pearson correlation.
+#draw the heatmap
+heatmap.2(dist,
+          Rowv=as.dendrogram(hr),
+          Colv=as.dendrogram(hr),
+          scale="row",
+          margins = c(2, 2),
+          cexCol = 0.7,
+          labRow = F,
+          labCol = F,
+          main = "Heatmap",
+          trace = "none"
+)
+
+```
+
+### Cluster Plot
+
+```{r ClusterPlot}
+set.seed(201)
+kClust2 <- kmeans(dt, centers=2, nstart = 1000, iter.max = 20)
+kClusters <- kClust2$cluster
+library(cluster)
+# clusplot(dt, kClust2$cluster, color=TRUE, shade=TRUE,
+#    labels=2, lines=0)
+# plotcluster(dt, kClust2$cluster) 
+library(factoextra)
+# fviz_cluster(kClust, dt, ellipse.type = "norm")
+fviz_cluster(kClust2, dt, geom = "point", frame.type = "norm")
+
+```
+
+Validation plot
+--------------------------
+
+### Validation plot: cluster dendogram
+
+```{r ValidationCluster}
+library(fpc)
+# dist <- cor(t(dt), method="pearson")
+# clust.stats <- cluster.stats(dist, kClust2$cluster, kClust3$cluster) 
+# clust.stats$dunn2
+# Enhanced hierarchical clustering
+data.scaled <- scale(dt)
+res.hc <- eclust(data.scaled, "hclust", k = 2,
+                method = "ward", graph = FALSE) 
+# head(res.hc$cluster, 15)
+fviz_dend(res.hc, rect = TRUE, show_labels = FALSE) 
+
+```
+
+### Validation plot: Silhouette coefficient of observations 
+
+```{r}
+# Silhouette coefficient of observations
+library("cluster")
+sil <- silhouette(kClust2$cluster, dist(data.scaled))
+# head(sil[, 1:3], 10)
+si.sum <- summary(sil)
+# Silhouette plot
+plot(sil, main ="Silhouette plot - K-means")
+# Default plot
+# K-means clustering
+km.res <- eclust(data.scaled, "kmeans", k = 2,
+                 nstart = 25, graph = FALSE)
+# fviz_silhouette(km.res)
+
+```
+
+```{r CentroidsCluster, eval=FALSE, include=FALSE}
+# function to find centroid in cluster i
+clust.centroid = function(i, dat, clusters) {
+  ind = (clusters == i)
+  colMeans(dat[ind,])
+}
+
+kClustcentroids <- sapply(levels(factor(kClusters)), clust.centroid, dt, kClusters)
+
+library(ggplot2)
+library(reshape)
+#get in long form for plotting
+Kmolten <- melt(kClustcentroids)
+colnames(Kmolten) <- c('sample_id','cluster','value')
+# Kmolten <- merge(Kmolten, meta_tall, by = "sample_id")
+#plot
+p1 <- ggplot(Kmolten, aes(x=sample_id, y=value, group=cluster, colour=as.factor(cluster))) +
+  geom_point() +
+  geom_line() +
+  xlab("Samples") +
+  ylab("Expression") +
+  labs(title= "Cluster Expression by Samples",color = "Cluster")
+# p1
+```
+
+
+```{r  eval=FALSE, include=FALSE}
+cor(kClustcentroids) %>%  kable(escape = F, align = "c", row.names = F, caption = "Table of correlation between clusters") %>%
+  kable_styling(c("striped"), full_width = F)
+
+```
+
+```{r  eval=FALSE, include=FALSE}
+library(gplots)
+#make the matrix
+dist <- cor(t(dt), method="pearson")
+#make the tree
+hr <- hclust(as.dist(1-dist), method="complete") # Cluster rows by Pearson correlation.
+#we made the hr and TreeR objects above.
+hclustk3 = cutree(hr, k=2) #cut tree to find 4 clusters
+library(dendextend)
+TreeR = as.dendrogram(hr, method="complete")
+plot(TreeR,
+     leaflab = "none",
+     main = "Gene Clustering",
+     ylab = "Height")
+#this plots the bar below:
+colored_bars(hclustk3, TreeR, sort_by_labels_order = T, y_shift=-0.1, rowLabels = c("k=2"),cex.rowLabels=0.7)
+# the_bars <- cbind(hclustk4, kClusters)
+# colored_bars(the_bars, TreeR, sort_by_labels_order = T, y_shift=-0.1, rowLabels = c("Treecut",'K-means'),cex.rowLabels=0.7)
+
+```
+
+
+```{r eval=FALSE, include=FALSE}
+# assign the output of heatmap.2 to a variable hm
+hm <- heatmap.2(dt, distfun=function(x) as.dist(1-cor(t(x))), hclustfun=function(x)hclust(x,method="ward.D"),trace="none",                                     scale = "row",
+                #ColSideColors=sample.colors,
+                col=colorRampPalette(brewer.pal(9,"GnBu"))(100), labCol=col.dt$condition, labRow = F, margins = c(6,6), 
+                density.info="none", main = "scaled gene and correlation distance")
+
+#return the maxtrix returned after clustering as in the heatmap
+m.afterclust <- dt[rev(hm$rowInd),rev(hm$colInd)]
+#Separating clusters
+#convert the rowDendrogram to a hclust object
+# dend <- hclust(dist(t(mat_scaled)), method = "ward.D2")
+# dend = color_branches(dend, k = 4)
+hc.rows <- as.hclust(hm$rowDendrogram)
+hc.cols <- as.hclust(hm$colDendrogram)
+plot(hc.cols)
+plot(hc.rows)  # rotate the dendrogram 90 degree, it is the same as in the heatmap
+rect.hclust(hc.rows,h=80, border = "red")
+ct<- cutree(hc.rows,h=80)
+# get the matrix after clustering in the order of the heatmap (up--->down)
+
+tableclustn <- data.frame(m.afterclust, cluster = rev(ct[hc.rows$order]))
+
+# remake the heatmap adding the RowSide bar based on the subgroups
+
+mycolhc<- palette(brewer.pal(8, "Set2"))
+mycolhc<-mycolhc[as.vector(ct)]
+
+heatmap.2(dt, distfun=function(x) as.dist(1-cor(t(x))), hclustfun=function(x)hclust(x,method="ward.D2"),
+          trace="none", scale = "row", #ColSideColors=annotation_colors$samples,
+          col=colorRampPalette(brewer.pal(9,"GnBu"))(100), RowSideColors = mycolhc, labCol=col.dt$condition,
+          labRow = F, margins = c(6,6), density.info="none", main = "scaled gene and correlation distance")
+
+```
+
+```{r  eval=FALSE, include=FALSE}
+pheatmap(dt, clustering_distance_rows = "correlation",
+           clustering_distance_cols = "correlation", cluster_rows = T, cluster_cols = T,
+           scale = "row", color = viridis(255), annotation_colors = annotation_colors, annotation_row = annotation_col[,"condition",drop = F])
+
+```
+
+
+```{r heatmapKmeans, eval=FALSE, include=FALSE}
+set.seed(123)
+library(rafalib)
+hc.cols<- hclust(as.dist(1-cor(dt)), method = "complete")  # cluster the samples
+hc.rows<- hclust(as.dist(1-cor(t(dt))), method = "ward.D2") # cluster the genes
+
+# table(type=colnames(dt), clusters=cutree(hc.cols, k=4))
+## plot the cluster, and validate the order of the labels
+# myplclust(hc.cols, labels=col.dt$sample_id, lab.col=as.fumeric(meta_tall$condition),
+#           main = "1- cor(x) distance")
+# rect.hclust(hc.rows, h= 0.7, border = "red")
+# cutree(hc.rows,h=0.7)
+ct <- cutree(hc.rows, k=2)
+mycolhc <- palette(brewer.pal(5, "Set1"))
+mycolhc <- mycolhc[as.vector(ct)]
+rowDend <- rev(as.dendrogram(hc.rows))
+colDend <- rev(as.dendrogram(hc.cols))
+
+heatmap.2(dt, Rowv = rowDend, Colv = colDend, trace="none", scale = "row", ColSideColors=sample.colors[colnames(dt)],
+          RowSideColors= mycolhc, col=colorRampPalette(brewer.pal(9,"GnBu"))(100), labCol=col.dt$condition,
+          margins = c(6,6), density.info="none", main = "scaled gene and correlation distance", labRow = "")
+```
+
+
+```{r pamcluster,  eval=FALSE, include=FALSE}
+pam.res <- pam(scale(dt), 2)
+pam.res$medoids
+
+clusplot(pam.res, main = "Cluster plot, k = 2", 
+         color = TRUE)
+
+```
+
+
+Clustering K=2
+=================================
+
+Heatmap
+------------------------------
+
+### Heatmap of Kmeans clustering K=2
+
+```{r ComplexHeatmapK2}
+library(ComplexHeatmap)
+library(circlize)
+
+# expr = readRDS(paste0(system.file(package = "ComplexHeatmap"), "/extdata/gene_expression.rds"))
+# mat = as.matrix(expr[, grep("cell", colnames(expr))])
+norm.dt <- rbe
+
+base_mean = rowMeans(norm.dt[rownames(dt),])
+mat_scaled = t(apply(dt, 1, scale))
+colnames(mat_scaled) <- colnames(dt)
+cond = colData$condition
+geneKD <- colData$geneKD
+ha = HeatmapAnnotation(df = data.frame(condition = cond, geneKD = geneKD),
+                       col = list(condition = c("IMM" = "#FFD700",
+                                                "HOXA" = "#FFA500",
+                                                "TLX3"= "#FF4500",
+                                                "TLX1" = "#C71585", 
+                                                "TAL-LMO" = "#FF00FF"),
+                                  geneKD = annotation_colors$geneKD))
+
+h <- Heatmap(mat_scaled, name = "expression", km = 2, col = colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),
+        top_annotation = ha, 
+        # top_annotation_height = unit(4, "mm"),
+        clustering_distance_columns = "pearson",
+        clustering_method_column = "ward.D2",
+        # cluster_columns = dend,
+        clustering_distance_rows = "euclidean",
+        clustering_method_rows = "complete",
+        cluster_rows = T,
+        cluster_columns = T,
+        # row_dend_side = "right",
+        # row_names_side = "left",
+        show_row_names = F, show_column_names = F, width = unit(9.5, "cm"),
+        show_row_dend = T,
+        show_column_dend = T,
+        row_names_gp = gpar(fontsize = 10)) +
+Heatmap(base_mean, name = "base_mean", show_row_names = FALSE, width = unit(5, "mm"), col = inferno(255), show_column_names = F)
+
+h
+
+```
+
+```{r circperclusterK2, include=FALSE}
+ht = Heatmap(mat_scaled, name = "expression", km = 2, col = colorRamp2(c(-2, 0, 2), c("green", "white", "red")),
+    top_annotation = ha, 
+    # top_annotation_height = unit(4, "mm"), 
+    clustering_distance_columns = "spearman",
+    clustering_distance_rows = "spearman",
+    show_row_names = FALSE, show_column_names = FALSE) +
+Heatmap(base_mean, name = "base_mean", show_row_names = FALSE, width = unit(5, "mm"))
+# ht = draw(ht)
+rcl.list <- row_order(ht)
+# lapply(rcl.list, function(x) length(x))  #check/confirm size clusters
+
+# loop to extract genes for each cluster.
+for (i in 1:length(row_order(ht))){
+   if (i == 1) {
+   clu <- t(t(row.names(mat_scaled[row_order(ht)[[i]],])))
+   out <- cbind(clu, paste("cluster", i, sep=""))
+   colnames(out) <- c("GeneID", "Cluster")
+   } else {
+   clu <- t(t(row.names(mat_scaled[row_order(ht)[[i]],])))
+   clu <- cbind(clu, paste("cluster", i, sep=""))
+   out <- rbind(out, clu)
+   }
+ }
+ 
+ 
+#check
+# out
+# result.pam$circRNA
+```
+
+
+
+Test differential expression ~ OE PVT1 
+===================================
+
+Column
+------------------------------------
+
+### DEGs
+
+```{r}
+colData(dds)$facotrAge <- factor(colData(dds)$facotrAge)
+colData(dds)$Sex <- factor(colData(dds)$Sex)
+dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat),
+                              colData = colData,
+                              design = ~ geneKD)
+colData(dds)$Sex <- factor(colData(dds)$Sex)
+colData(dds)$condition <- factor(colData(dds)$condition)
+colData(dds)$facotrAge <- factor(colData(dds)$facotrAge)
+
+design(dds) <- ~ facotrAge + Sex + geneKD
+
+dds <- DESeq(dds, betaPrior = F, parallel = F, sfType = "poscount", useT = F, minmu = 1e-6,
+                      minReplicatesForReplace = Inf,test = "LRT", reduced = ~ facotrAge + Sex) ## parameters for scRNA-seq
+
+res <- results(dds)
+# summary(res)
+# sum(res$padj <= .01, na.rm = T)
+```
+
+`r sum(res$padj <= .05, na.rm = T)` = total DEGs (`r \alpha = 0.05`)
+
+```{r include=FALSE}
+min.padj.id <- which.min(res$padj)
+fiss <- plotCounts(dds, min.padj.id, normalized = T,
+                   intgroup = c("condition", "geneKD"), 
+                   returnData = TRUE)
+
+fiss$condition <- factor(fiss$condition, levels = tall.subsamples, ordered = T)
+gene.id <- rownames(res)[min.padj.id]
+
+ggplot(fiss,
+       aes(x = condition, y = count, group = 1, 
+           color = geneKD)) + 
+    geom_point() + 
+    geom_smooth(se = FALSE, method = "loess", show.legend = F) + 
+    scale_y_log10() +
+    scale_color_manual("geneKD",
+                       guide = guide_legend(title.position = "top",
+                                            ncol = min(2, intgroup.dt.tall[, .N, by = class][, .N]),
+                                            title.hjust = .5),
+                       values = unique(setNames(intgroup.dt.tall[, class.color],
+                                                nm = intgroup.dt.tall[, class]))) +
+    ggtitle(rownames(res)[min.padj.id]) + 
+    theme_bw() + 
+    theme(plot.title = element_text(hjust = .5),
+          axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+get.d <- function(x, dds = dds){
+    d <- plotCounts(dds, gene = x, normalized = T,
+                    intgroup = c("condition", "geneKD"), 
+                    returnData = TRUE)
+    d$gene_id <- x
+    d
+}
+```
+
+```{r}
+# n.top <- 6
+decs <- res[which(res$padj <= 0.05), ]
+# top.decs <- decs[order(decs$baseMean, decreasing = T), ][1:10,]
+top.decs <- decs[order(abs(decs$log2FoldChange), decreasing = T), ][1:nrow(decs),]
+top.de.ids <- rownames(top.decs)[1:8]
+
+d <- rbindlist(lapply(top.de.ids, get.d, dds = dds))
+
+d$condition.f <- factor(d$condition, levels = tall.subsamples, ordered = T)
+
+ggplot(d,
+       aes(x = condition.f, y = count, 
+           group = gene_id,
+           color = gene_id)) + 
+    geom_point(#aes(shape = PVT1), 
+      show.legend = T, position = position_jitter()) +
+    geom_smooth(se = FALSE, method = "loess", show.legend = T) + 
+    scale_y_log10() +
+    # geom_text_repel(data = d.names, aes(label = gene_name), show.legend = F) +
+    scale_color_brewer(name = "Gene", palette = "Dark2", 
+                         guide = guide_legend(ncol = 2, title.position = "top",
+                                              title.hjust = .5)) +
+    # scale_shape_manual(name = "PVT1", 
+    #                   guide = guide_legend(title.position = "top", ncol = 1,
+    #                                        title.hjust = .5),
+    #                    values = c(17, 20)) +
+    xlab(NULL) +
+    ggtitle(paste0("Top ", length(top.de.ids), " DEGs")) + 
+    theme_bw() + 
+    theme(plot.title = element_text(hjust = .5),
+          legend.position = "bottom",
+          axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Column
+----------------------
+
+### Heatmap using DEGs (p.adj<.05)
+
+```{r }
+library(ComplexHeatmap)
+library(circlize)
+
+# dt <- assay(data_adjust.hc.100)[decs.circ, ]
+dt <- rbe[rownames(decs), ]
+
+set.seed(201)
+kClust <- kmeans(dt, centers=2, nstart = 1000, iter.max = 20)
+kClusters <- kClust$cluster
+# function to find centroid in cluster i
+clust.centroid = function(i, dat, clusters) {
+  ind = (clusters == i)
+  colMeans(dat[ind,])
+}
+
+base_mean = log2(rowMeans(dt)+0.001)
+mat_scaled = t(apply(dt, 1, scale))
+colnames(mat_scaled) <- colnames(dt)
+cond = colData$condition
+cond = gsub("_", "-", cond)
+
+ComplexHeatmap::Heatmap(mat_scaled, name = "expression", col = colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),
+        top_annotation = ha, 
+        # top_annotation_height = unit(4, "mm"),
+        clustering_distance_columns = "euclidean",
+        clustering_method_column = "ward.D2",
+        # cluster_columns = dend,
+        clustering_distance_rows = "spearman",
+        cluster_rows = T,
+        # row_dend_side = "right",
+        # row_names_side = "left",
+        show_row_names = T, show_column_names = F, width = unit(7, "cm"),
+        show_row_dend = T,
+        show_column_dend = T,
+        row_names_gp = gpar(fontsize = 1)) +
+ComplexHeatmap::Heatmap(base_mean, name = "log2(base mean)", show_row_names = T, row_names_gp = gpar(fontsize = 5), width = unit(2, "mm"), col = inferno(255), show_column_names = F)
+
+```
+
+
+PVT1
+-----------------------------
+
+### Volcano plot PVT1 OE vs KD (p.adj<.1) (`r sum(res$padj <= .1, na.rm = T)` DEGs)
+
+```{r }
+# Volcano
+# -----------------------------------
+
+EnhancedVolcanoAFB(res,
+    lab = rownames(res),
+    x = 'log2FoldChange',
+    y = 'padj',
+    xlim=c(-2,2),
+    ylim=c(0,4),
+    DrawConnectors = F, 
+    xlab = bquote(~Log[2]~ 'fold change'),
+    ylab = bquote(~-Log[10]~adjusted~italic(P)),
+    pCutoff = 0.1,
+    FCcutoff = 0.0,
+    transcriptLabSize = 4.0,
+    colAlpha = 1,
+    legend=c('NS','Log2 FC','Adjusted p-value',
+      'Adjusted p-value & Log2 FC'),
+    legendPosition = 'bottom',
+    legendLabSize = 10,
+    legendIconSize = 3.0)
+
+```
+
+Gene set Enrichment analysis of DEGs
+======================================
+
+```{r include=FALSE}
+# Gene set Enrichment analysis of DEGs
+# ======================================
+# install.packages("HTMLUtils")
+# library(HTMLUtilis)
+library(hwriter)
+library(ggplot2)
+library(gplots)
+library(stringi)
+library(metap)
+library(devtools)
+```
+
+```{r include=FALSE}
+# if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+# BiocManager::install(c("PADOG", "GSVA", "AnnotationDbi", "topGO",
+# "pathview", "gage", "globaltest", "limma", "edgeR", "safe",
+# "org.Hs.eg.db", "org.Mm.eg.db", "org.Rn.eg.db"))
+
+# if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+# BiocManager::install("EGSEAdata")
+
+# library(devtools)
+# install_github("malhamdoosh/EGSEAdata")
+# BiocManager::install("EGSEA")
+# BiocManager::install("EGSEA", version = "devel")
+# install_github("malhamdoosh/EGSEA")
+```
+
+
+```{r eval=FALSE, include=FALSE}
+# Column
+# --------------------------------
+# library(EGSEA)
+library(pathview)
+library(org.Hs.eg.db)
+library(pathfindR)
+# head(RA_input)
+res.dt <- as.data.table(res[which(res$padj <= 0.1), ], keep.rownames = "gene_id")
+rownames(res.dt) <- res.dt$gene_id
+RA.input <- res.dt[, c("gene_id", "log2FoldChange", "padj")]
+colnames(RA.input) <- c("Gene.symbol", "logFC", "adj.P.Val")
+RA_output <- run_pathfindR(RA.input, output = "/blackhole/circrna/analyses/VanVlierberghe/TALL/TALL_Rproj/circPVT1/results_gene/", iterations = 10, n_processes = 4)
+write.csv(RA_output, "/blackhole/circrna/analyses/VanVlierberghe/TALL/TALL_Rproj/circPVT1/results_gene/decs0.1_output.csv")
+```
+
+## First 6 rows of KEEG pathway analysis
+
+
+```{r }
+RA_output <- read.csv("/blackhole/circrna/analyses/VanVlierberghe/TALL/TALL_Rproj/circPVT1/results_gene//decs0.1_output.csv")
+kable(head(RA_output, 6), escape = F, align = "c", row.names = F, caption = "First 6 rows of clustered terms data frame") %>%
+  kable_styling(c("striped"), full_width = F)
+```
+
+
+```{r eval=FALSE, include=FALSE}
+### Cluster method using hierarchical method
+
+# The function initially performs hierarchical clustering of the terms in 'enrichment_res' using the kappa statistics (defining the distance as '-kappa_statistic'). Next, the clustering dendrogram is cut into k = 2, 3, ..., n - 1 clusters (where n is the number of terms). The optimal number of clusters is determined as the k value which yields the highest average silhouette width.
+
+### Cluster pathway plot
+library(pathfindR)
+cluster_pathways <- pathfindR::cluster_pathways
+
+RA_clustered <- cluster_pathways(RA_output)
+#> The maximum average silhouette width was 20.35 for k = 8
+```
+
+
+```{r eval=FALSE, include=FALSE}
+# Column
+# ----------------------------------------------
+
+### First rows of clustered terms data frame
+## First 2 rows of clustered terms data frame
+kable(head(RA_clustered, 6), escape = F, align = "c", row.names = F, caption = "First 6 rows of clustered terms data frame") %>%
+  kable_styling(c("striped"), full_width = F)
+
+
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+### Fuzzy method to cluster pathways
+RA_clustered <- cluster_pathways(RA_output, method = "fuzzy")
+
+```
+
+```{r eval=FALSE, include=FALSE}
+## Pathway data frame
+pws_table <- pathfindR::RA_clustered
+# selecting "Representative" pathways for clear visualization
+pws_table <- pws_table[pws_table$Status == "Representative", ]
+
+## Expression matrix
+exp_mat <- pathfindR::RA_exp_mat
+
+## Vector of "Case" IDs
+cases <- c("HOXA_05", "HOXA_20", "TAL_LMO_23", "TAL_LMO_32", "TLX1_11", "TLX1_36",
+                                                                 "TLX3_04", "TLX3_10", "TLX3_28", "TLX3_29")
+
+colnames(norm.counts) <- colData$sample_id3[match(colnames(norm.counts), rownames(colData))]
+## Calculate pathway scores and plot heatmap
+score_matrix <- calculate_pw_scores(RA_clustered[RA_clustered$Up_regulated!=" ", ], norm.counts, cases)
+```
+
