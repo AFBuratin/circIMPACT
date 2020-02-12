@@ -1,7 +1,7 @@
-Package: circTarget
+Package: CircTarget
 Type: Package
 Title: Pipeline for study interaction and association between circRNA and mRNA
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: person ("Alessia", "Buratin", email="alessia.buratin@studenti.unipd.it", 
       role = c("aut","cre"))
 Description: Detect the molecular pathways associated with the expression levels of 
@@ -12,5 +12,6 @@ Encoding: UTF-8
 LazyData: FALSE
 Imports: 
 Suggests:
-  knitr
+  knitr, rmarkdown
+VignetteBuilder: knitr
 RoxygenNote: 7.0.2
