@@ -1,12 +1,12 @@
 ---
-title: "The CircTarget package - Explore the circRNAs-Target expression profiling molecular pathways"
-author: 
-  - name: Alessia Buratin
-    affiliation: Departement of Biology, Department of Molecular Medicine, University of Padova
+title: "CircTarget"
+author: "Alessia Buratin"
 date: "`r format(Sys.Date(), '%m/%d/%Y')`"
 output: rmarkdown::html_vignette
 abstract: |
-  *CircTarget* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *CircTarget* package offers a tidy pipeline, starting from the provided circRNA-Target which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the Target circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *CircTarget* stands for "circRNA-Target".
+  *circTarget* provides empirical Bayes shrinkage estimators for effect sizes for a
+  variety of GLM models; *apeglm* stands for "Approximate Posterior
+  Estimation for GLM".
   CircTarget package version: `r packageVersion("CircTarget")`
 vignette: >
   %\VignetteIndexEntry{CircTarget}
@@ -20,7 +20,6 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
-
 
 # Introduction
 
