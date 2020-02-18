@@ -6,7 +6,7 @@ Authors@R: person ("Alessia", "Buratin", email="alessia.buratin@studenti.unipd.i
       role = c("aut","cre"))
 Description: Detect the molecular pathways associated with the expression levels of 
     the target circRNAs. Transcriptome unsupervised and supervised analyses is performed 
-    and samples with high with those with low expression of the interested circRNA.
+    and samples with high with those with low expression of the interested circRNA were compared.
 License: GPL-2
 Encoding: UTF-8
 LazyData: FALSE
