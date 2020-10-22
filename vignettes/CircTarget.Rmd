@@ -14,15 +14,29 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
+```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 ```
 
+<style>
+    body {
+        max-width: 1500px;
+        text-align: justify
+    }
+    .page-header {
+      background-image: none;
+      background-color: #ff7600;
+    }
+    .main-content h2 {
+      color: #ff7600;
+    }
+</style>
 
-# Introduction
+
+## Overview
 
 Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
 

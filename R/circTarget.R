@@ -1,6 +1,4 @@
-#' @title CircTarget
 #'
-#' @description define circRNA markers
 #'
 #' @param countmatrix
 #'
