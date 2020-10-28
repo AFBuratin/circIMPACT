@@ -136,7 +136,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
 
   }
 
-  circ_mark_selection <- circ_mark %>% dplyr::mutate(circ_id = rownames(data.filt)) %>% 
+  circ_mark_selection <- circ_mark %>% dplyr::mutate(circ_id = rownames(dat)) %>% 
     tidyr::drop_na() %>% 
     dplyr::filter(padj<=p.cutoff) %>% dplyr::filter(log2FoldChange>lfc.cutoff) %>% 
     arrange(abs(log2FoldChange))
@@ -152,43 +152,64 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
 #' @param circ_idofinterest circRNA-marker ID
 #' @param circRNAs normalized read count of circRNAs
 #' @param linearRNAs row read count of gene
-#' @param meta meta file
 #' @param colData coldata dataframe
 #' @param covariates additinal covariates for batch effect
+#' @param padj alpha thershold in deseq test 
+#' @param expr A TRUE or FALSE variable controlling whether the median expression should be used to define the two group comparison in DEG analysis.
 #' 
 #' @return data.frame of gene deregulated per circRNA-markers
 #' 
 #'
 #' @export
-geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colData, covariates, padj){
+geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colData, covariates, padj, expr=FALSE){
   
-  ## define covariates of interest: circlow vs high
-  # circ_sample <- circRNAs %>% as.data.table() %>% dplyr::filter(circ_id==circ_idofinterest) %>% dplyr::select_if(is.numeric) %>% 
-  #   gather(sample_id, sample_val) %>% dplyr::filter(sample_val>=median(sample_val))
-  # circ_sample <- merge(circ_sample, colData, by.x = "sample_id", by.y = "sample_id3")
-  # geneofinterest <- circ_to_genes$gene_names[circ_to_genes$circ_id==circ_idofinterest]
-  # meta <- colData %>% mutate(circKD = if_else(sample_id3%in%circ_sample$sample_id, paste0(geneofinterest, "_high"), paste0(geneofinterest, "_low")))
+  if(expr){
+    ## define covariates of interest: circlow vs circhigh
+    circ_sample <- circRNAs %>% as.data.table() %>% dplyr::filter(circ_id==circ_idofinterest) %>% 
+      dplyr::select_if(is.numeric) %>%
+      gather(sample_id, sample_val) %>% dplyr::filter(sample_val>=median(sample_val))
+    circ_sample <- merge(circ_sample, colData, by = "sample_id")
   
-  colData = colData %>% 
-    mutate(circM = if_else(sample_id%in%group$sample_id[group$group=="g1"], paste0(circ_idofinterest, "g1"), paste0(circ_idofinterest, "g2")))
+    colData <- colData %>% mutate(circKD = if_else(sample_id%in%circ_sample$sample_id, paste0(circ_idofinterest, "_high"), paste0(circ_idofinterest, "_low")))
+    
+    colData$circKD <- factor(colData$circKD)
+    colData$condition <- factor(colData$condition)
+    rownames(colData) <- colData$sample_id
+    
+    ## make deseqdataset for test
+    dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
+                                  colData = colData,
+                                  design = as.formula(paste0("~", covariates, "+ circKD")))
+    
+    ## performe DEGs
+    dds <- DESeq(dds, fitType = "local")
+    res <- results(dds)
+    n.degs <- sum(res$padj <= padj, na.rm = T)
+    degs <- res[which(res$padj <= padj), ]
+    res.dt <- as.data.table(res[which(res$padj <= padj), ], keep.rownames = "gene_id")
+    rownames(res.dt) <- res.dt$gene_id
+    
+    } else {
+      colData = colData %>% 
+        mutate(circM = if_else(sample_id%in%group$sample_id[group$group=="g1"], paste0(circ_idofinterest, "g1"), paste0(circ_idofinterest, "g2")))
   
+      # colData$circKD <- meta$circKD[match(colData$sample_id, meta$sample_id)]
+      colData$circM <- factor(colData$circM)
+      colData$condition <- factor(colData$condition)
+      rownames(colData) <- colData$sample_id
   
-  # colData$circKD <- meta$circKD[match(colData$sample_id, meta$sample_id)]
-  colData$circM <- factor(colData$circM)
-  colData$condition <- factor(colData$condition)
-  rownames(colData) <- colData$sample_id
-  
-  ## make deseqdataset for test
-  dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
-                                colData = colData,
-                                design = as.formula(paste0("~", covariates, "+ circM")))
-  
-  ## performe DEGs
-  dds <- DESeq(dds, fitType = "local")
-  res <- results(dds)
-  n.degs <- sum(res$padj <= padj, na.rm = T)
-  degs <- res[which(res$padj <= padj), ]
-  res.dt <- as.data.table(res[which(res$padj <= padj), ], keep.rownames = "gene_id")
-  rownames(res.dt) <- res.dt$gene_id
+      ## make deseqdataset for test
+      dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
+                                    colData = colData,
+                                    design = as.formula(paste0("~", covariates, "+ circM")))
+      
+      ## performe DEGs
+      dds <- DESeq(dds, fitType = "local")
+      res <- results(dds)
+      n.degs <- sum(res$padj <= padj, na.rm = T)
+      degs <- res[which(res$padj <= padj), ]
+      res.dt <- as.data.table(res[which(res$padj <= padj), ], keep.rownames = "gene_id")
+      rownames(res.dt) <- res.dt$gene_id
+      }
   return(as.data.frame(cbind(res.dt, n.degs)))
 }

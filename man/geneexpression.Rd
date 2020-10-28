@@ -11,7 +11,8 @@ geneexpression(
   group,
   colData,
   covariates,
-  padj
+  padj,
+  expr = FALSE
 )
 }
 \arguments{
@@ -25,7 +26,9 @@ geneexpression(
 
 \item{covariates}{additinal covariates for batch effect}
 
-\item{meta}{meta file}
+\item{padj}{alpha thershold in deseq test}
+
+\item{expr}{A TRUE or FALSE variable controlling whether the median expression should be used to define the two group comparison in DEG analysis.}
 }
 \value{
 data.frame of gene deregulated per circRNA-markers
