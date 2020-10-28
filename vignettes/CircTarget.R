@@ -60,7 +60,7 @@ sf.filt <- sizeFactors(dds.filt.expr)
 
 ## ----message=FALSE, warning=FALSE---------------------------------------------
 
-circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf, p.cutoff = 0.1, lfc.cutoff = 1.5, 
+circtarget <- marker.selection(dat = data.filt[1:200,], dds = dds.filt.expr, sf = sf, p.cutoff = 0.1, lfc.cutoff = 1.5, 
                                method.d = "euclidean", method.c = "average", k = 2)
 
 
@@ -68,8 +68,8 @@ circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf, p.
 markers.circrnas <- circtarget$circ.targetIDS
 mat.filt.mark <- circularData[markers.circrnas, ]
 
-dds.filt.mark <- DESeqDataSetFromMatrix(countData = ceiling(mat.filt.mark[,coldata.df$sample_id[order(coldata.df$condition)]]),
-                                   colData = coldata.df[order(coldata.df$condition),],
+dds.filt.mark <- DESeqDataSetFromMatrix(countData = ceiling(mat.filt.mark[,coldata.df$sample_id]),
+                                   colData = coldata.df,
                                    design = ~ 1)
 dds.filt.vst <- varianceStabilizingTransformation(dds.filt.mark, fitType = "local", blind = F)
 norm.counts.filt <- assay(dds.filt.vst)
@@ -90,7 +90,7 @@ d_tsne_1 = as.data.frame(tsne_data$Y)
 rownames(d_tsne_1) <- colnames(norm.counts.filt)
 
 
-## ---- fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."----
+## ----clustering, fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."----
 
 ## keeping original data
 d_tsne_1_original=d_tsne_1
@@ -146,14 +146,10 @@ grid.arrange(plot_k, plot_h,  ncol=2)
 #  cond = colData(dds.filt.expr)$condition
 #  ## choice of kmeans results as cluster of samples
 #  clus = d_tsne_1_original$cl_kmeans
+#  cond.colors <- unique(intgroup.dt$hue)
+#  names(cond.colors) <- unique(intgroup.dt$condition)
 #  ha = HeatmapAnnotation(df = data.frame(condition = cond, cluster = clus),
-#                         col = list(condition = c( "IMM" = "#FFD700",
-#                                                  "HOXA" = "#FFA500",
-#                                                  "TLX3"= "#FF4500",
-#                                                  "TLX1" = "#C71585",
-#                                                  "TAL-LMO" = "#FF00FF"),
-#                                    cluster = c("1" = "#b02323",
-#                                                "2" = "#2c558d")),
+#                         col = list(condition = cond.colors),
 #                         show_annotation_name = F,
 #                         annotation_legend_param = list(condition = list(nrow = 2, direction = "horizontal")))
 #  
@@ -188,7 +184,7 @@ grid.arrange(plot_k, plot_h,  ncol=2)
 #  
 
 ## ----Filterlinear_data--------------------------------------------------------
-
+## filter out genes low expressed 
 min.count <- 20
 min.col <- 5
 
@@ -196,6 +192,7 @@ filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
 
 
 ## ----message=FALSE, warning=FALSE---------------------------------------------
+#normalized circRNAs data 
 circNormDeseq <- counts(dds.filt.expr, normalized = T) %>% as.data.frame()
 circNormDeseq$circ_id <- rownames(circNormDeseq)
 
@@ -203,7 +200,7 @@ library(doParallel)
 no_cores <- detectCores() - 1  
 registerDoParallel(cores=no_cores)  
 
-gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
+gene_mark <- foreach::foreach(i=1:3, .combine = rbind) %dopar% {
 
   results.temp <- cbind(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.05, 
@@ -223,7 +220,4 @@ knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>%
 dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
 
-
-## ---- echo=FALSE, results='asis'----------------------------------------------
-knitr::kable(head(mtcars, 10))
 
