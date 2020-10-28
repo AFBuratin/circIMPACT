@@ -11,7 +11,7 @@ License: GPL-2
 Encoding: UTF-8
 LazyData: FALSE
 Suggests:
-  knitr, rmarkdown, DESEq2, data.table, plyr, Rtsne
+    knitr, rmarkdown, DESEq2, data.table, plyr, Rtsne, ggplot2, ggrepel, ComplexHeatmap, circlize, viridis, kableExtra
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
 Depends: 

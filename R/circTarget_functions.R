@@ -170,12 +170,13 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
   # meta <- colData %>% mutate(circKD = if_else(sample_id3%in%circ_sample$sample_id, paste0(geneofinterest, "_high"), paste0(geneofinterest, "_low")))
   
   colData = colData %>% 
-    mutate(circM = if_esle(sample_id%in%group$sample_id[group$group=="g1"]), paste0(circ_idofinterest, "g1"), paste0(circ_idofinterest, "g2"))
+    mutate(circM = if_else(sample_id%in%group$sample_id[group$group=="g1"], paste0(circ_idofinterest, "g1"), paste0(circ_idofinterest, "g2")))
   
   
   # colData$circKD <- meta$circKD[match(colData$sample_id, meta$sample_id)]
   colData$circM <- factor(colData$circM)
   colData$condition <- factor(colData$condition)
+  rownames(colData) <- colData$sample_id
   
   ## make deseqdataset for test
   dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
@@ -187,6 +188,7 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
   res <- results(dds)
   n.degs <- sum(res$padj <= padj, na.rm = T)
   degs <- res[which(res$padj <= padj), ]
-  
+  res.dt <- as.data.table(res[which(res$padj <= padj), ], keep.rownames = "gene_id")
+  rownames(res.dt) <- res.dt$gene_id
   return(as.data.frame(cbind(res.dt, n.degs)))
 }

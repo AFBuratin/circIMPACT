@@ -69,6 +69,13 @@ library(DESeq2)
 library(data.table)
 library(plyr)
 library(Rtsne)
+library(ggplot2)
+library(ggrepel)
+library(ComplexHeatmap)
+library(circlize)
+library(viridis)
+library(knitr)
+library(kableExtra)
 ```
 ----
 
@@ -132,13 +139,14 @@ The result `list` will include:
 
 * circ.markers - a data frame with DESeq estimates for each circRNAs.  
 * circ.targets - a vector of circRNAs defined as possible targets.
+* group.df - data.frame with a variable group that indicate the new stratification of samples by circRNAs expression.
 
 ### Clustering analysis using CircRNA-markers
 
 Clustering analysis is performed using the previuos selected circRNA, defined as circRNA-markers. 
 T-SNE algorithm is used to performe dimensionality reduction and k-means and hierarchical clustering methods are compared in order to identify two cluster of samples. 
 
-```{r}
+```{r message=FALSE}
 markers.circrnas <- circtarget$circ.targetIDS
 mat.filt.mark <- circularData[markers.circrnas, ]
 
@@ -167,7 +175,7 @@ rownames(d_tsne_1) <- colnames(norm.counts.filt)
 
 ```
 
-```{r, fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."}
+```{r clustering, fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."}
 
 ## keeping original data
 d_tsne_1_original=d_tsne_1
@@ -282,7 +290,7 @@ filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
 
 ```
 
-```{r }
+```{r message=FALSE, warning=FALSE}
 circNormDeseq <- counts(dds.filt.expr, normalized = T) %>% as.data.frame()
 circNormDeseq$circ_id <- rownames(circNormDeseq)
 
@@ -290,15 +298,27 @@ library(doParallel)
 no_cores <- detectCores() - 1  
 registerDoParallel(cores=no_cores)  
 
-gene_mark <- foreach::foreach(i=1:length(markers.circrnas), .combine = rbind) %dopar% {
+gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
 
-  #make a for loop to estimate log2FC and p.adj to select marker circRNAs
   results.temp <- cbind(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.05, 
-                                       group = circtarget$group.df[, circ_id%in%markers.circrnas[i]],
+                                       group = circtarget$group.df[circtarget$group.df$circ_id%in%markers.circrnas[i],],
                                        covariates = "condition"), markers.circrnas[i])
 }
 
+
+```
+
+
+```{r}
+
+gene_mark <- as.data.table(gene_mark)
+
+gene_mark <- dplyr::rename(gene_mark, "circRNA_markers" = "markers.circrnas[i]")
+
+knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>% 
+dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
+      escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
 
 ```
 
