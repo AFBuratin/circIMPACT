@@ -13,6 +13,13 @@ library(DESeq2)
 library(data.table)
 library(plyr)
 library(Rtsne)
+library(ggplot2)
+library(ggrepel)
+library(ComplexHeatmap)
+library(circlize)
+library(viridis)
+library(knitr)
+library(kableExtra)
 
 ## -----------------------------------------------------------------------------
 data("circularData")
@@ -57,7 +64,7 @@ circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf, p.
                                method.d = "euclidean", method.c = "average", k = 2)
 
 
-## -----------------------------------------------------------------------------
+## ----message=FALSE------------------------------------------------------------
 markers.circrnas <- circtarget$circ.targetIDS
 mat.filt.mark <- circularData[markers.circrnas, ]
 
@@ -82,4 +89,141 @@ tsne_data <- Rtsne(mydist, pca = F, perplexity=5, max_iter=5000)
 d_tsne_1 = as.data.frame(tsne_data$Y)
 rownames(d_tsne_1) <- colnames(norm.counts.filt)
 
+
+## ---- fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."----
+
+## keeping original data
+d_tsne_1_original=d_tsne_1
+
+## Creating k-means clustering model, and assigning the result to the data used to create the tsne
+fit_cluster_kmeans=kmeans(scale(d_tsne_1), 2)
+d_tsne_1_original$cl_kmeans = factor(fit_cluster_kmeans$cluster)
+
+## Creating hierarchical cluster model, and assigning the result to the data used to create the tsne
+fit_cluster_hierarchical=hclust(dist(scale(d_tsne_1)))
+
+## setting 2 clusters as output
+d_tsne_1_original$cl_hierarchical = factor(cutree(fit_cluster_hierarchical, k=2))
+
+# Plotting the cluster models onto t-SNE output
+
+plot_cluster=function(data, var_cluster, palette)
+{
+  ggplot(data, aes_string(x="V1", y="V2", color=var_cluster)) +
+  geom_point(size=3) +
+  guides(colour=guide_legend(override.aes=list(size=3))) +
+  geom_text_repel(aes(label = rownames(data)), 
+                  hjust = 0.5, vjust = -1) +
+  xlab("") + ylab("") +
+  ggtitle("") +
+  theme_light(base_size=11) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal") + 
+    scale_colour_brewer(palette = palette) 
+}
+
+
+plot_k=plot_cluster(d_tsne_1_original, "cl_kmeans", "Dark2")
+plot_h=plot_cluster(d_tsne_1_original, "cl_hierarchical", "Set1")
+
+## and finally: putting the plots side by side with gridExtra lib...
+library(gridExtra)
+grid.arrange(plot_k, plot_h,  ncol=2)
+
+
+## ----eval=FALSE, include=FALSE------------------------------------------------
+#  
+#  set.seed(201)
+#  dds.filt.mark <- estimateSizeFactors(dds.filt.mark)
+#  circNormDeseq <- counts(dds.filt.mark, normalized = T)
+#  
+#  base_mean = log2(rowMeans(circNormDeseq)+0.001)
+#  mat_scaled = t(apply(dt, 1, function(x) scale(x = x, center = T, scale = T)))
+#  colnames(mat_scaled) <- colnames(dt)
+#  cond = colData(dds.filt.expr)$condition
+#  ## choice of kmeans results as cluster of samples
+#  clus = d_tsne_1_original$cl_kmeans
+#  ha = HeatmapAnnotation(df = data.frame(condition = cond, cluster = clus),
+#                         col = list(condition = c( "IMM" = "#FFD700",
+#                                                  "HOXA" = "#FFA500",
+#                                                  "TLX3"= "#FF4500",
+#                                                  "TLX1" = "#C71585",
+#                                                  "TAL-LMO" = "#FF00FF"),
+#                                    cluster = c("1" = "#b02323",
+#                                                "2" = "#2c558d")),
+#                         show_annotation_name = F,
+#                         annotation_legend_param = list(condition = list(nrow = 2, direction = "horizontal")))
+#  
+#  mat.dend <- as.dendrogram(fit_cluster_hierarchical)
+#  fit_cluster_kmeans$cluster
+#  ht <- Heatmap(mat_scaled, name = "expression",
+#          # km = 2,
+#          # column_km = 2,
+#          column_order = names(fit_cluster_kmeans$cluster[order(fit_cluster_kmeans$cluster)]),
+#          col = colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),
+#          top_annotation = ha,
+#          # top_annotation_height = unit(4, "mm"),
+#          clustering_distance_columns = "euclidean",
+#          clustering_method_column = "complete",
+#          cluster_columns = F,
+#          clustering_distance_rows = "spearman",#"minkowski",
+#          clustering_method_rows = "ward.D2",
+#          cluster_rows = T,
+#          # row_dend_side = "right",
+#          # row_names_side = "left",
+#          show_row_names = T,
+#          show_column_names = F,
+#          width = unit(9, "cm"),
+#          show_row_dend = T,
+#          show_column_dend = T,
+#          # row_dend_reorder = TRUE,
+#          row_names_gp = gpar(fontsize = 5),
+#          heatmap_legend_param = list(direction = "horizontal")) +
+#  Heatmap(base_mean, name = "log2(base mean)", show_row_names = F, width = unit(2, "mm"), col = inferno(255), show_column_names = F, row_names_gp = gpar(fontsize = 5), heatmap_legend_param = list(direction = "horizontal"))
+#  
+#  draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
+#  
+
+## ----Filterlinear_data--------------------------------------------------------
+
+min.count <- 20
+min.col <- 5
+
+filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
+
+
+## ----message=FALSE, warning=FALSE---------------------------------------------
+circNormDeseq <- counts(dds.filt.expr, normalized = T) %>% as.data.frame()
+circNormDeseq$circ_id <- rownames(circNormDeseq)
+
+library(doParallel)
+no_cores <- detectCores() - 1  
+registerDoParallel(cores=no_cores)  
+
+gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
+
+  results.temp <- cbind(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
+                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.05, 
+                                       group = circtarget$group.df[circtarget$group.df$circ_id%in%markers.circrnas[i],],
+                                       covariates = "condition"), markers.circrnas[i])
+}
+
+
+
+## -----------------------------------------------------------------------------
+
+gene_mark <- as.data.table(gene_mark)
+
+gene_mark <- dplyr::rename(gene_mark, "circRNA_markers" = "markers.circrnas[i]")
+
+knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>% 
+dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
+      escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
+
+
+## ---- echo=FALSE, results='asis'----------------------------------------------
+knitr::kable(head(mtcars, 10))
 

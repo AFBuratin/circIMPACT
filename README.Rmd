@@ -1,4 +1,4 @@
-  ---
+---
 output: github_document
 ---
 
@@ -22,13 +22,7 @@ The goal of CircTarget is to ...
 
 ## Installation
 
-You can install the released version of CircTarget from [CRAN](https://CRAN.R-project.org) with:
-
-``` r
-install.packages("CircTarget")
-```
-
-And the development version from [GitHub](https://github.com/) with:
+You can install the development version from [GitHub](https://github.com/ABuratin/CircTarget) with:
 
 ``` r
 # install.packages("devtools")
