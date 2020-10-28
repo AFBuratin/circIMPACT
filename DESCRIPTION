@@ -10,8 +10,9 @@ Description: Detect the molecular pathways associated with the expression levels
 License: GPL-2
 Encoding: UTF-8
 LazyData: FALSE
-Imports: 
 Suggests:
-  knitr, rmarkdown
+  knitr, rmarkdown, DESEq2, data.table, plyr, Rtsne
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
+Depends: 
+    R (>= 2.10)

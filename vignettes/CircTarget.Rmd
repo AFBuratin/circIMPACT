@@ -1,17 +1,21 @@
 ---
-title: "The CircTarget package - Explore the circRNAs-Target expression profiling molecular pathways"
+title: "The CircTarget package - Explore the circRNA expression profiling molecular pathways"
 author: 
   - name: Alessia Buratin
     affiliation: Departement of Biology, Department of Molecular Medicine, University of Padova
-date: "`r format(Sys.Date(), '%m/%d/%Y')`"
-output: rmarkdown::html_vignette
-abstract: |
-  *CircTarget* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *CircTarget* package offers a tidy pipeline, starting from the provided circRNA-Target which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the Target circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *CircTarget* stands for "circRNA-Target".
-  CircTarget package version: `r packageVersion("CircTarget")`
+date: "`r format(Sys.Date(), '%d-%m-%Y')`"    
+output:
+  prettydoc::html_pretty:
+    theme: hpstr  
+    highlight: github
+bibliography: library.bib
+link-citations: yes
 vignette: >
   %\VignetteIndexEntry{CircTarget}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
@@ -38,32 +42,267 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+*CircTarget* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *CircTarget* package offers a tidy pipeline, starting from the provided circRNA-Target which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the Target circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *CircTarget* stands for "circRNA-Target".
+CircTarget package version: `r packageVersion("CircTarget")`
 
-# Quickstart
+*CircTarget* provides an R interface to analyze a possible impact of circRNA expression profile in gene expression.
 
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low CircTarget expression with those with high expression. 
 
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
+The main tools in *CircTarget* are:
 
-## Figures
+* `marker.detection` - detection of circRNAs that can stratified samples by their expression signifincantly
 
-The figure sizes have been customised so that you can easily put two images side-by-side. 
+The input for any of the tools consist in count matrices: from the same samples we need the quantification of circular and linear RNA.
 
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+----
+
+## Installation and loading
+
+```{r eval = FALSE}
+devtools::install_github("ABuratin/CircTarget")
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+```{r setup, warning = FALSE, message = FALSE}
+library(CircTarget)
+library(DESeq2)
+library(data.table)
+library(plyr)
+library(Rtsne)
+```
+----
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
+### Input data
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+```{r}
+data("circularData")
+data("count.matrix")
+data("meta")
+data("coldata.df")
+## define sample/condition colors
+intgroup.dt <- meta[, .(.N), by = .(sample_id, 
+                                      condition)][order(sample_id), 
+                                                  .(sample_id), by = condition]
+samples.per.condition <- data.frame(intgroup.dt[, .N, by = .(condition)], row.names = "condition")
+  
+n.conditions <- nrow(samples.per.condition)
+hues <- CircTarget::gg_color_hue(n.conditions)
+for(i in 1:n.conditions){
+      n.hues <- samples.per.condition[i, "N"] + 2
+      col.hues <- colorRampPalette(colors = c(hues[i], 
+                                              "white"))(n.hues)[1:(n.hues-2)]
+      
+      intgroup.dt[condition == rownames(samples.per.condition)[i], `:=`(color = col.hues,
+                                                                        hue = hues[i])]
+    }
+## create a deseq dataset object 
+dds.circular <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(circularData[, coldata.df$sample_id[order(coldata.df$condition)]]),
+                                   colData = coldata.df[order(coldata.df$condition),],
+                                   design = ~ condition))
+dds.circular <- suppressMessages(estimateSizeFactors(dds.circular))
+sf <- sizeFactors(dds.circular)
+```
+
+At first a simply filter of low count is applied to remove some noise.
+
+```{r}
+data.filt <- circularData[rowSums(circularData >= 5) >= 3,]
+dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample_id[order(coldata.df$condition)]]),
+                                   colData = coldata.df[order(coldata.df$condition),],
+                                   design = ~ condition))
+dds.filt.expr <- suppressMessages(estimateSizeFactors(dds.filt.expr))
+sf.filt <- sizeFactors(dds.filt.expr)
+
+```
+
+## Selection of circRNA-markers with `marker.detection`
+
+### CircRNA-markers
+
+To establish a possible impact of circRNA in gene expression using different molecular subtypes of human T-ALL we select a subset of circRNA defined as markers: only circRNA which expression can discretize two groups (DESeq adj. p-value<.1 and log fold-change>1.5) have been selected.
+
+```{r message=FALSE, warning=FALSE}
+
+circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf, p.cutoff = 0.1, lfc.cutoff = 1.5, 
+                               method.d = "euclidean", method.c = "average", k = 2)
+
+```
+
+The result `list` will include:
+
+* circ.markers - a data frame with DESeq estimates for each circRNAs.  
+* circ.targets - a vector of circRNAs defined as possible targets.
+
+### Clustering analysis using CircRNA-markers
+
+Clustering analysis is performed using the previuos selected circRNA, defined as circRNA-markers. 
+T-SNE algorithm is used to performe dimensionality reduction and k-means and hierarchical clustering methods are compared in order to identify two cluster of samples. 
+
+```{r}
+markers.circrnas <- circtarget$circ.targetIDS
+mat.filt.mark <- circularData[markers.circrnas, ]
+
+dds.filt.mark <- DESeqDataSetFromMatrix(countData = ceiling(mat.filt.mark[,coldata.df$sample_id[order(coldata.df$condition)]]),
+                                   colData = coldata.df[order(coldata.df$condition),],
+                                   design = ~ 1)
+dds.filt.vst <- varianceStabilizingTransformation(dds.filt.mark, fitType = "local", blind = F)
+norm.counts.filt <- assay(dds.filt.vst)
+```
+
+```{r }
+dt <- norm.counts.filt
+
+```
+
+```{r}
+## Rtsne function may take some minutes to complete...
+set.seed(9)
+mydist <- dist(t(norm.counts.filt))
+## t-SNE representation
+tsne_data <- Rtsne(mydist, pca = F, perplexity=5, max_iter=5000)
+
+## getting the two dimension matrix
+d_tsne_1 = as.data.frame(tsne_data$Y)
+rownames(d_tsne_1) <- colnames(norm.counts.filt)
+
+```
+
+```{r, fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."}
+
+## keeping original data
+d_tsne_1_original=d_tsne_1
+
+## Creating k-means clustering model, and assigning the result to the data used to create the tsne
+fit_cluster_kmeans=kmeans(scale(d_tsne_1), 2)
+d_tsne_1_original$cl_kmeans = factor(fit_cluster_kmeans$cluster)
+
+## Creating hierarchical cluster model, and assigning the result to the data used to create the tsne
+fit_cluster_hierarchical=hclust(dist(scale(d_tsne_1)))
+
+## setting 2 clusters as output
+d_tsne_1_original$cl_hierarchical = factor(cutree(fit_cluster_hierarchical, k=2))
+
+# Plotting the cluster models onto t-SNE output
+
+plot_cluster=function(data, var_cluster, palette)
+{
+  ggplot(data, aes_string(x="V1", y="V2", color=var_cluster)) +
+  geom_point(size=3) +
+  guides(colour=guide_legend(override.aes=list(size=3))) +
+  geom_text_repel(aes(label = rownames(data)), 
+                  hjust = 0.5, vjust = -1) +
+  xlab("") + ylab("") +
+  ggtitle("") +
+  theme_light(base_size=11) +
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        legend.direction = "horizontal", 
+        legend.position = "bottom",
+        legend.box = "horizontal") + 
+    scale_colour_brewer(palette = palette) 
+}
+
+
+plot_k=plot_cluster(d_tsne_1_original, "cl_kmeans", "Dark2")
+plot_h=plot_cluster(d_tsne_1_original, "cl_hierarchical", "Set1")
+
+## and finally: putting the plots side by side with gridExtra lib...
+library(gridExtra)
+grid.arrange(plot_k, plot_h,  ncol=2)
+
+```
+
+### Heatmap using CircRNA-markers
+
+```{r eval=FALSE, include=FALSE}
+
+set.seed(201)
+dds.filt.mark <- estimateSizeFactors(dds.filt.mark)
+circNormDeseq <- counts(dds.filt.mark, normalized = T)
+
+base_mean = log2(rowMeans(circNormDeseq)+0.001)
+mat_scaled = t(apply(dt, 1, function(x) scale(x = x, center = T, scale = T)))
+colnames(mat_scaled) <- colnames(dt)
+cond = colData(dds.filt.expr)$condition
+## choice of kmeans results as cluster of samples
+clus = d_tsne_1_original$cl_kmeans
+ha = HeatmapAnnotation(df = data.frame(condition = cond, cluster = clus),
+                       col = list(condition = c( "IMM" = "#FFD700",
+                                                "HOXA" = "#FFA500",
+                                                "TLX3"= "#FF4500",
+                                                "TLX1" = "#C71585", 
+                                                "TAL-LMO" = "#FF00FF"),
+                                  cluster = c("1" = "#b02323",
+                                              "2" = "#2c558d")),
+                       show_annotation_name = F,
+                       annotation_legend_param = list(condition = list(nrow = 2, direction = "horizontal")))
+
+mat.dend <- as.dendrogram(fit_cluster_hierarchical)
+fit_cluster_kmeans$cluster  
+ht <- Heatmap(mat_scaled, name = "expression", 
+        # km = 2,
+        # column_km = 2,
+        column_order = names(fit_cluster_kmeans$cluster[order(fit_cluster_kmeans$cluster)]),
+        col = colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),
+        top_annotation = ha, 
+        # top_annotation_height = unit(4, "mm"),
+        clustering_distance_columns = "euclidean",
+        clustering_method_column = "complete",
+        cluster_columns = F,
+        clustering_distance_rows = "spearman",#"minkowski",
+        clustering_method_rows = "ward.D2",
+        cluster_rows = T,
+        # row_dend_side = "right",
+        # row_names_side = "left",
+        show_row_names = T, 
+        show_column_names = F, 
+        width = unit(9, "cm"),
+        show_row_dend = T,
+        show_column_dend = T,
+        # row_dend_reorder = TRUE,
+        row_names_gp = gpar(fontsize = 5),
+        heatmap_legend_param = list(direction = "horizontal")) +
+Heatmap(base_mean, name = "log2(base mean)", show_row_names = F, width = unit(2, "mm"), col = inferno(255), show_column_names = F, row_names_gp = gpar(fontsize = 5), heatmap_legend_param = list(direction = "horizontal"))
+
+draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
+
+```
+
+
+## Gene list functional enrichment analysis with *CircTargets*
+
+### Gene expression analysis - Table results
+
+```{r Filterlinear_data}
+
+min.count <- 20
+min.col <- 5
+
+filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
+
+```
+
+```{r }
+circNormDeseq <- counts(dds.filt.expr, normalized = T) %>% as.data.frame()
+circNormDeseq$circ_id <- rownames(circNormDeseq)
+
+library(doParallel)
+no_cores <- detectCores() - 1  
+registerDoParallel(cores=no_cores)  
+
+gene_mark <- foreach::foreach(i=1:length(markers.circrnas), .combine = rbind) %dopar% {
+
+  #make a for loop to estimate log2FC and p.adj to select marker circRNAs
+  results.temp <- cbind(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
+                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.05, 
+                                       group = circtarget$group.df[, circ_id%in%markers.circrnas[i]],
+                                       covariates = "condition"), markers.circrnas[i])
+}
+
+
+```
+
+### Enrichment analysis
 
 ## More Examples
 
