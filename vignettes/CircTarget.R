@@ -151,54 +151,54 @@ library(gridExtra)
 grid.arrange(plot_k, plot_h,  ncol=2)
 
 
-## ----eval=FALSE, include=FALSE------------------------------------------------
-#  
-#  set.seed(201)
-#  dds.filt.mark <- estimateSizeFactors(dds.filt.mark)
-#  circNormDeseq <- counts(dds.filt.mark, normalized = T)
-#  
-#  base_mean = log2(rowMeans(circNormDeseq)+0.001)
-#  mat_scaled = t(apply(dt, 1, function(x) scale(x = x, center = T, scale = T)))
-#  colnames(mat_scaled) <- colnames(dt)
-#  cond = colData(dds.filt.expr)$condition
-#  ## choice of kmeans results as cluster of samples
-#  clus = d_tsne_1_original$cl_kmeans
-#  cond.colors <- unique(intgroup.dt$hue)
-#  names(cond.colors) <- unique(intgroup.dt$condition)
-#  ha = HeatmapAnnotation(df = data.frame(condition = cond, cluster = clus),
-#                         col = list(condition = cond.colors),
-#                         show_annotation_name = F,
-#                         annotation_legend_param = list(condition = list(nrow = 2, direction = "horizontal")))
-#  
-#  mat.dend <- as.dendrogram(fit_cluster_hierarchical)
-#  fit_cluster_kmeans$cluster
-#  ht <- Heatmap(mat_scaled, name = "expression",
-#          # km = 2,
-#          # column_km = 2,
-#          column_order = names(fit_cluster_kmeans$cluster[order(fit_cluster_kmeans$cluster)]),
-#          col = colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),
-#          top_annotation = ha,
-#          # top_annotation_height = unit(4, "mm"),
-#          clustering_distance_columns = "euclidean",
-#          clustering_method_column = "complete",
-#          cluster_columns = F,
-#          clustering_distance_rows = "spearman",#"minkowski",
-#          clustering_method_rows = "ward.D2",
-#          cluster_rows = T,
-#          # row_dend_side = "right",
-#          # row_names_side = "left",
-#          show_row_names = T,
-#          show_column_names = F,
-#          width = unit(9, "cm"),
-#          show_row_dend = T,
-#          show_column_dend = T,
-#          # row_dend_reorder = TRUE,
-#          row_names_gp = gpar(fontsize = 5),
-#          heatmap_legend_param = list(direction = "horizontal")) +
-#  Heatmap(base_mean, name = "log2(base mean)", show_row_names = F, width = unit(2, "mm"), col = inferno(255), show_column_names = F, row_names_gp = gpar(fontsize = 5), heatmap_legend_param = list(direction = "horizontal"))
-#  
-#  draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
-#  
+## -----------------------------------------------------------------------------
+
+set.seed(201)
+dds.filt.mark <- estimateSizeFactors(dds.filt.mark)
+circNormDeseq <- counts(dds.filt.mark, normalized = T)
+
+base_mean = log2(rowMeans(circNormDeseq)+0.001)
+mat_scaled = t(apply(dt, 1, function(x) scale(x = x, center = T, scale = T)))
+colnames(mat_scaled) <- colnames(dt)
+cond = colData(dds.filt.expr)$condition
+## choice of kmeans results as cluster of samples
+clus = d_tsne_1_original$cl_kmeans
+cond.colors <- unique(intgroup.dt$hue)
+names(cond.colors) <- unique(intgroup.dt$condition)
+ha = HeatmapAnnotation(df = data.frame(condition = cond, cluster = clus),
+                       col = list(condition = cond.colors),
+                       show_annotation_name = F,
+                       annotation_legend_param = list(condition = list(nrow = 2, direction = "horizontal")))
+
+mat.dend <- as.dendrogram(fit_cluster_hierarchical)
+fit_cluster_kmeans$cluster  
+ht <- Heatmap(mat_scaled, name = "expression", 
+        # km = 2,
+        # column_km = 2,
+        column_order = names(fit_cluster_kmeans$cluster[order(fit_cluster_kmeans$cluster)]),
+        col = colorRamp2(c(-2, 0, 2), c("blue", "white", "red")),
+        top_annotation = ha, 
+        # top_annotation_height = unit(4, "mm"),
+        clustering_distance_columns = "euclidean",
+        clustering_method_column = "complete",
+        cluster_columns = F,
+        clustering_distance_rows = "spearman",#"minkowski",
+        clustering_method_rows = "ward.D2",
+        cluster_rows = T,
+        # row_dend_side = "right",
+        # row_names_side = "left",
+        show_row_names = T, 
+        show_column_names = F, 
+        width = unit(9, "cm"),
+        show_row_dend = T,
+        show_column_dend = T,
+        # row_dend_reorder = TRUE,
+        row_names_gp = gpar(fontsize = 5),
+        heatmap_legend_param = list(direction = "horizontal")) +
+Heatmap(base_mean, name = "log2(base mean)", show_row_names = F, width = unit(2, "mm"), col = inferno(255), show_column_names = F, row_names_gp = gpar(fontsize = 5), heatmap_legend_param = list(direction = "horizontal"))
+
+draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
+
 
 ## ----Filterlinear_data--------------------------------------------------------
 ## filter out genes low expressed 
@@ -237,4 +237,23 @@ knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>%
 dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
 
+
+## -----------------------------------------------------------------------------
+#subset gene symbol deregulated using the first circRNAs marker as stratificator
+geneList <- gene_mark$log2FoldChange[gene_mark$circRNA_markers==markers.circrnas[3]]
+names(geneList) <- gene_mark$gene_id[gene_mark$circRNA_markers==markers.circrnas[3]]
+# order gene list by foldchange
+geneList = sort(geneList, decreasing = TRUE)
+
+library(gprofiler2)
+
+gostres2 <- gost(query = names(geneList)[names(geneList)!="."], 
+                 organism = "hsapiens", ordered_query = TRUE, 
+                 multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+                 measure_underrepresentation = FALSE, evcodes = TRUE, 
+                 user_threshold = 0.05, correction_method = "g_SCS", 
+                 domain_scope = "annotated", custom_bg = NULL, 
+                 numeric_ns = "", sources = NULL)
+p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
+p
 
