@@ -86,8 +86,10 @@ marker.detection <- function(circ.m, dds, sf, method.d, method.c, k){
   
   dist_mat <- dist(as.data.frame(scale(circ.m)), method = method.d)
   hclust_avg <- hclust(dist_mat, method = method.c)
+  # kmeans <- kmeans(dist_mat, k, iter.max = 10, nstart = 1)
   cut_avg <- cutree(hclust_avg, k = k)
   group <- ifelse(cut_avg==1, "g1", "g2")
+  # group <- ifelse(kmeans$cluster==1, "g1", "g2")
   colData(dds)$group <- as.factor(group)
   design(dds) <- ~group
   sizeFactors(dds) <- sf
@@ -144,6 +146,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
   markers.circrnas = circ_mark_selection$circ_id
   group = data.frame(circ_mark[,-c(1:6)], circ_id = rownames(circ_mark))
   group.df = gather(group, key="sample_id", value = "group", -circ_id) %>% arrange(circ_id)
+ 
   return(list(circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = group.df))
 }
   
