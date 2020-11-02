@@ -56,12 +56,29 @@ dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(dat
                                    design = ~ condition))
 dds.filt.expr <- suppressMessages(estimateSizeFactors(dds.filt.expr))
 sf.filt <- sizeFactors(dds.filt.expr)
-
+circNormDeseq <- counts(dds.filt.expr, normalized = T)
 
 ## ----message=FALSE, warning=FALSE---------------------------------------------
 
-circtarget <- marker.selection(dat = data.filt[1:200,], dds = dds.filt.expr, sf = sf, p.cutoff = 0.1, lfc.cutoff = 1.5, 
-                               method.d = "euclidean", method.c = "average", k = 2)
+circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf, p.cutoff = 0.1, lfc.cutoff = 1.5, 
+                                 method.d = "euclidean", method.c = "ward.D2", k = 2)
+
+
+## -----------------------------------------------------------------------------
+circMark <- circtarget$circ.targetIDS[1]
+circMark_group.df <- circtarget$group.df[circtarget$group.df$circ_id==circMark,]
+circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
+mu <- ddply(circMark_group.df, "group", summarise, grp.mean=mean(counts))
+
+p <- ggplot(circMark_group.df, aes(x=counts, color=group, fill=group)) +
+  geom_density(alpha=0.3) + 
+  geom_vline(data=mu, aes(xintercept=grp.mean, color=group),
+             linetype="dashed") +
+  scale_fill_brewer(palette="Dark2") + 
+  scale_color_brewer(palette="Dark2") + 
+  labs(title=paste0("circMarker (", circMark, ")", " counts density curve"), x = "Normalized read counts", y = "Density") + 
+  theme_classic()
+p
 
 
 ## ----message=FALSE------------------------------------------------------------
