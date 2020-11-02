@@ -244,7 +244,7 @@ grid.arrange(plot_k, plot_h,  ncol=2)
 
 ### Heatmap using CircRNA-markers
 
-```{r eval=FALSE, include=FALSE}
+```{r }
 
 set.seed(201)
 dds.filt.mark <- estimateSizeFactors(dds.filt.mark)
@@ -344,4 +344,24 @@ dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
 ```
 
 ### Enrichment analysis
+
+```{r}
+#subset gene symbol deregulated using the interesting circRNA marker as stratificator
+geneList <- gene_mark$log2FoldChange[gene_mark$circRNA_markers==markers.circrnas[3]]
+names(geneList) <- gene_mark$gene_id[gene_mark$circRNA_markers==markers.circrnas[3]]
+# order gene list by foldchange
+geneList = sort(geneList, decreasing = TRUE)
+
+library(gprofiler2)
+
+gostres2 <- gost(query = names(geneList)[names(geneList)!="."], 
+                 organism = "hsapiens", ordered_query = TRUE, 
+                 multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+                 measure_underrepresentation = FALSE, evcodes = TRUE, 
+                 user_threshold = 0.05, correction_method = "g_SCS", 
+                 domain_scope = "annotated", custom_bg = NULL, 
+                 numeric_ns = "", sources = NULL)
+p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
+p
+```
 
