@@ -35,7 +35,7 @@ devtools::install_github("ABuratin/CircTarget")
 
 This is a basic example which shows you how to detect circRNA-target:
 
-```{r load}
+```{r load, message=FALSE, warning=FALSE}
 
 library(CircTarget)
 library(DESeq2)
