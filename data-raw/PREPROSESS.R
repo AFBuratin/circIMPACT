@@ -3,7 +3,7 @@ exampleData.gtf <- read.csv("data-raw/circRNA_expression_per_sample.csv", sep = 
 # Apply preprocessing...
 library(stringr)
 library(data.table)
-fix.name.dot <- function(x){
+fix.name <- function(x){
   gsub(pattern = " ", replacement = "", 
        sub("^([0-9].*)", "X\\1", 
            gsub(pattern = "\\.|/", replacement = "_", 
@@ -18,7 +18,7 @@ rownames(circularData) <- exampleData.gtf$circ_id
 # Save the cleaned data in the required R package location
 usethis::use_data(circularData)
 
-# Load meta data
+# meta data
 meta <- unique(fread("data-raw/meta_tall.csv")[, .(sample_id = fix.name(Donor), 
                                                 condition = Condition,
                                                 tissue = Tissue,
@@ -28,12 +28,18 @@ meta <- unique(fread("data-raw/meta_tall.csv")[, .(sample_id = fix.name(Donor),
 meta$condition <- gsub("  ", " ", meta$condition)
 usethis::use_data(meta, overwrite = TRUE)
 
-
-## create a coldata data.frame
+# create a coldata data.frame
 coldata.df <- as.data.frame(meta)
 rownames(coldata.df) <- coldata.df$sample_id
 coldata.df$condition <- factor(coldata.df$condition)
 usethis::use_data(coldata.df)
+
+# make a dds object for readme.Rmd
+dds.circular <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(circularData[, coldata.df$sample_id[order(coldata.df$condition)]]),
+                                                        colData = coldata.df[order(coldata.df$condition),],
+                                                        design = ~ condition))
+dds.circular <- suppressMessages(estimateSizeFactors(dds.circular))
+usethis::use_data(dds.circular)
 
 # Load raw data from .csv file  
 gene_expression_TPM <- fread("data-raw/gene_expression_TPM_table.csv")
