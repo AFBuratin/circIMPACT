@@ -62,27 +62,33 @@ circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf.fil
 #> The following object is masked from 'package:S4Vectors':
 #> 
 #>     expand
-#> Warning: attributes are not identical across measure variables;
-#> they will be dropped
 ```
 
 For instance, you can see the distribution of circRNA-target:
 
 ``` r
-
+  
 circMark <- circtarget$circ.targetIDS[1]
 circMark_group.df <- circtarget$group.df[circtarget$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
-mu <- ddply(circMark_group.df, "group", summarise, grp.mean=mean(counts))
+mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
 
 p <- ggplot(circMark_group.df, aes(x=counts, color=group, fill=group)) +
   geom_density(alpha=0.3) + 
-  geom_vline(data=mu, aes(xintercept=grp.mean, color=group),
+  geom_vline(data=mu, aes(xintercept=Median, color=group),
              linetype="dashed") +
-  scale_fill_brewer(palette="Dark2") + 
+  geom_text(data=mu, aes(x=Median[group=="g1"] - 0.2, 
+                         label=paste0("Median:", round(Median[group=="g1"], 3), " Variance:", round(Variance[group=="g1"], 3)), y=0.2),
+            colour="black", angle=90, text=element_text(size=9)) +
+  geom_text(data=mu, aes(x=Median[group=="g2"] - 0.2, 
+                       label=paste0("Median:", round(Median[group=="g2"], 3), " Variance:", round(Variance[group=="g2"], 3)), y=0.2), 
+          colour="black", angle=90, text=element_text(size=11)) +  scale_fill_brewer(palette="Dark2") + 
   scale_color_brewer(palette="Dark2") + 
   labs(title=paste0("circMarker (", circMark, ")", " counts density curve"), x = "Normalized read counts", y = "Density") + 
   theme_classic()
+#> Warning: Ignoring unknown parameters: text
+
+#> Warning: Ignoring unknown parameters: text
 p
 ```
 
