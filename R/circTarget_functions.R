@@ -111,8 +111,7 @@ marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k){
 #' 
 #' 
 color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
-  fun <- match.fun(fun)
-  
+  fun=match.fun(fun)
   stopifnot(n >= 5)
   
   Thresh = 0
@@ -131,7 +130,8 @@ color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
   # rampbreaks = c(rb1, rb2)
   
   return_cut <- function(y) 
-    cut(y, breaks = c(seq(min(y), Thresh, length.out=nHalf+1), seq(Thresh, max(y), length.out=nHalf+1)[-1]), labels = 1:n+1, ordered_result = T)
+    cut(y, breaks = c(seq(min(y), Thresh, length.out=nHalf+1), 
+                      seq(Thresh, max(y), length.out=nHalf+1)[-1]), labels = 1:n+1, ordered_result = T)
   
   return_col <- function(y) 
     rampcols[as.integer(return_cut(y))]
@@ -149,8 +149,7 @@ color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
 }
 
 color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
-  fun <- match.fun(fun)
-  
+  fun=match.fun(fun)
   stopifnot(n >= 5)
   
   return_cut <- function(y) 
@@ -173,7 +172,7 @@ color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
 }
 
 stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", digits = 4) {
-  fun <- match.fun(fun)
+  fun=match.fun(fun)
   formattable::formatter("span", x ~ fun(x, digits = digits),
                          style = function(y) formattable::style(              
                            display = "block",              
@@ -217,6 +216,35 @@ sparkline_hist <- function(x, g){
   plotly=plotly::ggplotly(gg)
 as.character(htmltools::as.tags(as_widget(plotly)))
   }
+
+
+#' Export a Formattable as PNG, PDF, or JPEG
+#'
+#' @param f A formattable.
+#' @param file Export path with extension .png, .pdf, or .jpeg.
+#' @param width Width specification of the html widget being exported.
+#' @param height Height specification of the html widget being exported.
+#' @param background Background color specification.
+#' @param delay Time to wait before taking webshot, in seconds.
+#'
+#' @importFrom formattable as.htmlwidget
+#' @importFrom htmltools html_print
+#' @importFrom webshot webshot
+#'
+#' @export
+export_formattable <- function(f, file, width = "100%", height = "100%", 
+                               background = "white", delay = 10)
+{
+  w <- as.htmlwidget(f, width = width, height = height)
+  path <- html_print(w, background = background, viewer = NULL)
+  url <- paste0("file:///", gsub("\\\\", "/", normalizePath(path)))
+  webshot(url,
+          file = file,
+          selector = ".formattable_widget",
+          delay = delay)
+}
+
+
 
 #' Select circRNA markers
 #' To establish a possible impact of circRNA in gene expression
@@ -281,7 +309,6 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
   
   markers.circrnas = unique(circ_mark_selection$circ_id)
   
-  if(plot){
     tab_merge <- circ_mark_selection %>%
       dplyr::select(circ_id, log2FoldChange, padj, group, count)
 
@@ -289,7 +316,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
     tab_merge$Marker[tab_merge$padj<=0.1] <- "TRUE"
     tab_merge$count <- as.numeric(tab_merge$count)
     
-    tab_merge %>% 
+    tab_plot = tab_merge %>% 
       # tidyr::spread(group, count) %>% 
       dplyr::group_by(circ_id) %>% 
       dplyr::summarise(
@@ -308,14 +335,16 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
         # )
         ) %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
           circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          logFC = color_tile3(digits = 3, n = 18),
+          logFC = color_tile3(digits = 3, n = 18, fun = "comma", palette = "PiYG"),
           p.adj = stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
           Marker = formattable::formatter("span", 
                              style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
                              x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
-          mean.G1 = color_tile4(digits = 3),
-          mean.G2 = color_tile4(digits = 3)))
+          mean.G1 = color_tile4(digits = 3, fun = "comma"),
+          mean.G2 = color_tile4(digits = 3, fun = "comma")))
     
+    # export_formattable(tab_plot, file = "formattble_table.png")
+    print(tab_plot)
     # formattable::formattable(tab_reduce, align = c("c","c","c","c"), list(
     #   circ_id = formattable::formatter("span", style = ~ style(color = "grey", font.weight = "bold")),
     #   log2FoldChange = color_tile3(digits = 3, n = 18),
@@ -323,8 +352,8 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
     #   Marker = formattable::formatter("span", 
     #                      style = x ~ formastyle(color = ifelse(x, "orange", "gray")), 
     #                      x ~ icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))))) 
-  }
-  return(list(circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = circ_mark[,c("circ_id", "sample_id", "group")]))
+
+  return(list(plot=tab_plot, circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = circ_mark[,c("circ_id", "sample_id", "group")]))
 }
   
 #' Detect dergulated genes using circRNA-markers as stratificator of samples

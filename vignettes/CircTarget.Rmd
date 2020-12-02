@@ -79,10 +79,13 @@ library(viridis)
 library(knitr)
 library(kableExtra)
 library(formattable)
+library(htmltools)
 library(sparkline)
 library(tidyverse)
 library(RColorBrewer)
 library(purrr)
+library(magrittr)
+library(webshot)
 ```
 ----
 
@@ -135,11 +138,11 @@ circNormDeseq <- counts(dds.filt.expr, normalized = T)
 
 To establish a possible impact of circRNA in gene expression using different molecular subtypes of human T-ALL we select a subset of circRNA defined as markers: at first by using k-means algorithm we separate samples in two main cluster defined by the circRNA expression, then only circRNA which DESeq adj. p-value<.1 and log fold-change>1.5 have been selected.
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, include=TRUE}
 
 circtarget <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1.5, 
-                                 method.d = "euclidean", method.c = "ward.D2", k = 2, plot = TRUE)
-
+                                 method.d = "euclidean", method.c = "ward.D2", k = 2)
+print(circtarget$plot)
 ```
 
 The result `list` will include:
@@ -147,7 +150,7 @@ The result `list` will include:
 * circ.markers - a data frame with DESeq estimates for each circRNAs.  
 * circ.targets - a vector of circRNAs defined as possible targets.
 * group.df - data.frame with a variable group that indicate the new stratification of samples by circRNAs expression.
-
+* plot - formatted table with info. about circTarget expression
 ### Density expression of circRNA-markers
 
 ```{r}
