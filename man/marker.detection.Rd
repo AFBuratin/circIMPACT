@@ -8,7 +8,7 @@ we define two groups of samples defined by similarity in circRNAs expression.
 K-means algorithm is used to define these two groups and then DESeq test (adj. p-value<.01) 
 have been used to detect circRNA markers.}
 \usage{
-marker.detection(circ.m, dds, sf, method.d, method.c, k)
+marker.detection(circ_id, circ.m, dds, sf, method.d, method.c, k)
 }
 \arguments{
 \item{circ.m}{circRNA id}

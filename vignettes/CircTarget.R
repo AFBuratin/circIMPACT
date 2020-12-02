@@ -15,11 +15,17 @@ library(plyr)
 library(Rtsne)
 library(ggplot2)
 library(ggrepel)
+library(plotly)
 library(ComplexHeatmap)
 library(circlize)
 library(viridis)
 library(knitr)
 library(kableExtra)
+library(formattable)
+library(sparkline)
+library(tidyverse)
+library(RColorBrewer)
+library(purrr)
 
 ## -----------------------------------------------------------------------------
 data("circularData")
@@ -60,21 +66,26 @@ circNormDeseq <- counts(dds.filt.expr, normalized = T)
 
 ## ----message=FALSE, warning=FALSE---------------------------------------------
 
-circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf, p.cutoff = 0.1, lfc.cutoff = 1.5, 
-                                 method.d = "euclidean", method.c = "ward.D2", k = 2)
+circtarget <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1.5, 
+                                 method.d = "euclidean", method.c = "ward.D2", k = 2, plot = TRUE)
 
 
 ## -----------------------------------------------------------------------------
 circMark <- circtarget$circ.targetIDS[1]
 circMark_group.df <- circtarget$group.df[circtarget$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
-mu <- ddply(circMark_group.df, "group", summarise, grp.mean=mean(counts))
+mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
 
 p <- ggplot(circMark_group.df, aes(x=counts, color=group, fill=group)) +
   geom_density(alpha=0.3) + 
-  geom_vline(data=mu, aes(xintercept=grp.mean, color=group),
+  geom_vline(data=mu, aes(xintercept=Median, color=group),
              linetype="dashed") +
-  scale_fill_brewer(palette="Dark2") + 
+  geom_text(data=mu, aes(x=Median[group=="g1"] - 0.2, 
+                         label=paste0("Median:", round(Median[group=="g1"], 3), " Variance:", round(Variance[group=="g1"]), 3), y=0.2),
+            colour="black", angle=90, text=element_text(size=9)) +
+  geom_text(data=mu, aes(x=Median[group=="g2"] - 0.2, 
+                       label=paste0("Median:", round(Median[group=="g2"], 3), " Variance:", round(Variance[group=="g2"]), 3 ), y=0.2), 
+          colour="black", angle=90, text=element_text(size=11)) +  scale_fill_brewer(palette="Dark2") + 
   scale_color_brewer(palette="Dark2") + 
   labs(title=paste0("circMarker (", circMark, ")", " counts density curve"), x = "Normalized read counts", y = "Density") + 
   theme_classic()
@@ -150,6 +161,35 @@ plot_h=plot_cluster(d_tsne_1_original, "cl_hierarchical", "Set1")
 library(gridExtra)
 grid.arrange(plot_k, plot_h,  ncol=2)
 
+
+## -----------------------------------------------------------------------------
+pca <- prcomp(x = t(norm.counts.filt), center = T)
+d <- data.frame(pca$x[rownames(coldata.df), c("PC1", "PC2")], coldata.df)
+PC1.var <- summary(pca)$importance["Proportion of Variance", 1]
+PC2.var <- summary(pca)$importance["Proportion of Variance", 2]
+g1 <- ggplot(data = d, 
+       mapping = aes(x = PC1, y = PC2)) +
+    geom_point(size = 4) +
+    coord_fixed(ratio = 1) +
+    xlab(paste0("PC1: ", percent(PC1.var))) +
+    ylab(paste0("PC2: ", percent(PC2.var))) +
+    theme_classic() + 
+    theme(legend.position = "bottom", 
+          plot.title = element_text(hjust = .5))
+library(factoextra)
+#### compute contribution 
+contrib <- function(ind.coord, comp.sdev, n.ind){
+  100*(1/n.ind)*ind.coord^2/comp.sdev^2
+}
+ind.contrib <- t(apply(pca$x, 1, contrib, 
+                       pca$sdev, nrow(pca$x)))
+g3 <- fviz_contrib(pca, choice="var", axes = 1:3, top = 8)
+library(ggpubr)
+
+ggpubr::ggarrange(ggarrange(g1, g3, 
+                            ncol = 2, 
+                            labels = c("A", "B")),
+                  nrow = 1)  
 
 ## -----------------------------------------------------------------------------
 
@@ -239,7 +279,7 @@ dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
 
 
 ## -----------------------------------------------------------------------------
-#subset gene symbol deregulated using the first circRNAs marker as stratificator
+#subset gene symbol deregulated using the interesting circRNA marker as stratificator
 geneList <- gene_mark$log2FoldChange[gene_mark$circRNA_markers==markers.circrnas[3]]
 names(geneList) <- gene_mark$gene_id[gene_mark$circRNA_markers==markers.circrnas[3]]
 # order gene list by foldchange

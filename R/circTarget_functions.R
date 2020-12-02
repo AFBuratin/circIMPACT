@@ -76,7 +76,7 @@ get.color.hues <- function(meta){
 #' 
 #'
 #' @export
-marker.detection <- function(circ.m, dds, sf, method.d, method.c, k){
+marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k){
   
   # if(median(circ.m)==0){
   #   group <- ifelse(circ.m<mean(circ.m), "DW", "UP")
@@ -97,10 +97,126 @@ marker.detection <- function(circ.m, dds, sf, method.d, method.c, k){
   dispersions(dds) <- mcols(dds)$dispGeneEst
   dds <- nbinomWaldTest(dds)
   padj =  as.data.frame(results(dds))
-  group = t(as.data.frame(colData(dds)$group))
-  
-  return(res = cbind(padj, group))
+  # group = t(as.data.frame(colData(dds)$group))
+  group = plotCounts(dds, gene = circ_id, normalized = T,
+                         intgroup = c("group"), 
+                         returnData = TRUE)
+  group$sample_id = rownames(group)
+  group$circ_id = circ_id
+  res = merge(group, padj, by.x="circ_id", by.y="row.names")
+  return(res = res)
 }
+
+#' Define formatter function for plot table 
+#' 
+#' 
+color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
+  fun <- match.fun(fun)
+  
+  stopifnot(n >= 5)
+  
+  Thresh = 0
+  nHalf = n/2
+  
+  ## Make vector of colors for values below threshold
+  rc1 = colorRampPalette(colors = c("#4DAC26", "white"), space="Lab")(nHalf)    
+  ## Make vector of colors for values above threshold
+  rc2 = colorRampPalette(colors = c("white", "#D01C8B"), space="Lab")(nHalf)
+  rampcols = c(rc1, rc2)
+  ## In your example, this line sets the color for values between 49 and 51. 
+  rampcols[c(nHalf, nHalf+1)] = rgb(t(col2rgb("#e1db86")), maxColorValue=256)
+  
+  # rb1 = seq(Min, Thresh, length.out=nHalf+1)
+  # rb2 = seq(Thresh, Max, length.out=nHalf+1)[-1]
+  # rampbreaks = c(rb1, rb2)
+  
+  return_cut <- function(y) 
+    cut(y, breaks = c(seq(min(y), Thresh, length.out=nHalf+1), seq(Thresh, max(y), length.out=nHalf+1)[-1]), labels = 1:n+1, ordered_result = T)
+  
+  return_col <- function(y) 
+    rampcols[as.integer(return_cut(y))]
+  
+  formattable::formatter("span", x ~ fun(x, digits = digits),
+                           style = function(y) formattable::style(
+                           display = "block",
+                           padding = "0 4px",
+                           "border-radius" = "4px",
+                           "color" = ifelse( return_cut(y) %in% c(2, 3, 4, 17, 18, 19),
+                                             csscolor("grey"), csscolor("balck")),
+                           "background-color" = return_col(y)
+                           )
+  )
+}
+
+color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
+  fun <- match.fun(fun)
+  
+  stopifnot(n >= 5)
+  
+  return_cut <- function(y) 
+    cut(y, breaks = quantile(y, probs = 0:n/n, na.rm = T),
+        labels = 1:n, ordered_result = T, include.lowest = T)
+  
+  return_col <- function(y) 
+    RColorBrewer::brewer.pal(n, palette)[as.integer(return_cut(y))]
+  
+  formatter("span", x ~ fun(x, digits = digits),
+            style = function(y) formattable::style(
+              display = "block",
+              padding = "0 4px",
+              "border-radius" = "4px",
+              "color" = ifelse( return_cut(y) %in% c(n-3, n-2, n-1, n),
+                                csscolor("white"), csscolor("black")),
+              "background-color" = return_col(y)
+            )
+  )
+}
+
+stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", digits = 4) {
+  fun <- match.fun(fun)
+  formattable::formatter("span", x ~ fun(x, digits = digits),
+                         style = function(y) formattable::style(              
+                           display = "block",              
+                           padding = "0 4px",              
+                           "border-radius" = "4px",              
+                           "color" = ifelse( y <= cut3, csscolor("black"), csscolor("grey")),
+                           "background-color" = ifelse( y <= cut1, csscolor("#d11b3a"),
+                                                        ifelse( y <= cut2, csscolor("#d11b70"),
+                                                                ifelse( y <= cut3, csscolor("#d11ba4"),
+                                                                        csscolor("#731bd1"))))
+                           )
+  )
+}
+
+## Include this function somewhere
+# sparkline_hist <- function(x, breaks, type="bar"){
+#   as.character(
+#     htmltools::as.tags(
+#       sparkline(
+#         hist(
+#           x,
+#           breaks=breaks,
+#           plot=FALSE
+#         )$density,
+#         type = type
+#       )
+#     )
+#   )
+# }
+
+sparkline_hist <- function(x, g){
+  data = data.frame(count=x, group=g)
+    gg=ggplot(data, aes(x=count, color=group, fill=group)) +
+  geom_density(alpha=0.3) + 
+  # geom_vline(data=mu, aes(xintercept=grp.mean, color=group),
+  #            linetype="dashed") +
+  scale_fill_brewer(palette="Dark2") + 
+  scale_color_brewer(palette="Dark2") + 
+  # labs(title=paste0("circMarker (", circMark, ")", " counts density curve"), x = "Normalized read counts", y = "Density") + 
+  theme_classic()
+  plotly=plotly::ggplotly(gg)
+as.character(htmltools::as.tags(as_widget(plotly)))
+  }
 
 #' Select circRNA markers
 #' To establish a possible impact of circRNA in gene expression
@@ -122,7 +238,7 @@ marker.detection <- function(circ.m, dds, sf, method.d, method.c, k){
 #' 
 #'
 #' @export
-marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, method.c, k){
+marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, method.c, k, plot=FALSE, n=9){
   library(doParallel)
   library(dplyr)
   library(tidyr)
@@ -130,24 +246,85 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
   registerDoParallel(cores=no_cores)  
   
   circ_mark = foreach::foreach(i=1:nrow(dat), .combine=rbind) %dopar% {
-  
-  #make a for loop to estimate log2FC and p.adj to select marker circRNAs
-  results.temp <- marker.detection(circ.m = dat[i,], dds = dds[i,], 
-                                               sf = sf, method.d = method.d, 
-                                               method.c = method.c, k = k)
 
+  circ_id <- rownames(dat)[i]
+  #make a for loop to estimate log2FC and p.adj to select marker circRNAs
+  results.temp <- marker.detection(circ_id = circ_id, circ.m = dat[circ_id,], dds = dds[circ_id,], 
+                                   sf = sf, method.d = method.d, 
+                                   method.c = method.c, k = k)
+  
   }
 
-  circ_mark_selection <- circ_mark %>% dplyr::mutate(circ_id = rownames(dat)) %>% 
-    tidyr::drop_na() %>% 
-    dplyr::filter(padj<=p.cutoff) %>% dplyr::filter(log2FoldChange>lfc.cutoff) %>% 
-    arrange(abs(log2FoldChange))
+  if(!is.null(p.cutoff)){
+    if(!is.null(lfc.cutoff)){
+      circ_mark_selection <- circ_mark %>%
+        tidyr::drop_na() %>% 
+        dplyr::filter(padj<=p.cutoff) %>% dplyr::filter(abs(log2FoldChange)>=lfc.cutoff) %>% 
+        arrange(abs(log2FoldChange))
+    } else {
+      circ_mark_selection <- circ_mark %>% 
+        tidyr::drop_na() %>% 
+        dplyr::filter(padj<=p.cutoff) %>% 
+        arrange(abs(log2FoldChange))
+    } 
+  } 
+  
+  if(!is.null(lfc.cutoff)) {
+    circ_mark_selection <- circ_mark %>% 
+      tidyr::drop_na() %>% 
+      dplyr::filter(abs(log2FoldChange)>=lfc.cutoff) %>% 
+      arrange(abs(log2FoldChange))
+  } else {
+    circ_mark_selection <- circ_mark %>% 
+      tidyr::drop_na()
+  } 
+  
+  markers.circrnas = unique(circ_mark_selection$circ_id)
+  
+  if(plot){
+    tab_merge <- circ_mark_selection %>%
+      dplyr::select(circ_id, log2FoldChange, padj, group, count)
 
-  markers.circrnas = circ_mark_selection$circ_id
-  group = data.frame(circ_mark[,-c(1:6)], circ_id = rownames(circ_mark))
-  group.df = gather(group, key="sample_id", value = "group", -circ_id) %>% arrange(circ_id)
- 
-  return(list(circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = group.df))
+    tab_merge$Marker <- "FALSE"
+    tab_merge$Marker[tab_merge$padj<=0.1] <- "TRUE"
+    tab_merge$count <- as.numeric(tab_merge$count)
+    
+    tab_merge %>% 
+      # tidyr::spread(group, count) %>% 
+      dplyr::group_by(circ_id) %>% 
+      dplyr::summarise(
+        logFC=round(mean(log2FoldChange),4),
+        p.adj=round(mean(padj),4),
+        Marker=unique(Marker),
+        mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
+        mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
+        # circ.counts=sparkline_hist(
+        #   counts,
+        #   hist(tab_merge$counts,plot=FALSE)$breaks
+        # )
+        # count.density = sparkline_hist(
+        #     x = counts,
+        #     g = group
+        # )
+        ) %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
+          circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
+          logFC = color_tile3(digits = 3, n = 18),
+          p.adj = stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
+          Marker = formattable::formatter("span", 
+                             style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
+                             x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
+          mean.G1 = color_tile4(digits = 3),
+          mean.G2 = color_tile4(digits = 3)))
+    
+    # formattable::formattable(tab_reduce, align = c("c","c","c","c"), list(
+    #   circ_id = formattable::formatter("span", style = ~ style(color = "grey", font.weight = "bold")),
+    #   log2FoldChange = color_tile3(digits = 3, n = 18),
+    #   padj = stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
+    #   Marker = formattable::formatter("span", 
+    #                      style = x ~ formastyle(color = ifelse(x, "orange", "gray")), 
+    #                      x ~ icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))))) 
+  }
+  return(list(circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = circ_mark[,c("circ_id", "sample_id", "group")]))
 }
   
 #' Detect dergulated genes using circRNA-markers as stratificator of samples
