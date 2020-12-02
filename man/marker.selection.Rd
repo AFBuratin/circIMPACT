@@ -8,7 +8,18 @@ we select a subset of circRNA defined as markers:
 only circRNA which expression can discretize two groups 
 (DESeq adj. p-value<.01) have been selected.}
 \usage{
-marker.selection(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, method.c, k)
+marker.selection(
+  dat,
+  dds,
+  sf,
+  p.cutoff,
+  lfc.cutoff,
+  method.d,
+  method.c,
+  k,
+  plot = FALSE,
+  n = 9
+)
 }
 \arguments{
 \item{dat}{circRNA data set}
