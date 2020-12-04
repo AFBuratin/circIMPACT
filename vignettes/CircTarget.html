@@ -54,230 +54,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-<script>$(document).ready(function(){
-    if (typeof $('[data-toggle="tooltip"]').tooltip === 'function') {
-        $('[data-toggle="tooltip"]').tooltip();
-    }
-    if ($('[data-toggle="popover"]').popover === 'function') {
-        $('[data-toggle="popover"]').popover();
-    }
-});
-</script>
-<style type="text/css">
-.lightable-minimal {
-border-collapse: separate;
-border-spacing: 16px 1px;
-width: 100%;
-margin-bottom: 10px;
-}
-.lightable-minimal td {
-margin-left: 5px;
-margin-right: 5px;
-}
-.lightable-minimal th {
-margin-left: 5px;
-margin-right: 5px;
-}
-.lightable-minimal thead tr:last-child th {
-border-bottom: 2px solid #00000050;
-empty-cells: hide;
-}
-.lightable-minimal tbody tr:first-child td {
-padding-top: 0.5em;
-}
-.lightable-minimal.lightable-hover tbody tr:hover {
-background-color: #f5f5f5;
-}
-.lightable-minimal.lightable-striped tbody tr:nth-child(even) {
-background-color: #f5f5f5;
-}
-.lightable-classic {
-border-top: 0.16em solid #111111;
-border-bottom: 0.16em solid #111111;
-width: 100%;
-margin-bottom: 10px;
-margin: 10px 5px;
-}
-.lightable-classic tfoot tr td {
-border: 0;
-}
-.lightable-classic tfoot tr:first-child td {
-border-top: 0.14em solid #111111;
-}
-.lightable-classic caption {
-color: #222222;
-}
-.lightable-classic td {
-padding-left: 5px;
-padding-right: 5px;
-color: #222222;
-}
-.lightable-classic th {
-padding-left: 5px;
-padding-right: 5px;
-font-weight: normal;
-color: #222222;
-}
-.lightable-classic thead tr:last-child th {
-border-bottom: 0.10em solid #111111;
-}
-.lightable-classic.lightable-hover tbody tr:hover {
-background-color: #F9EEC1;
-}
-.lightable-classic.lightable-striped tbody tr:nth-child(even) {
-background-color: #f5f5f5;
-}
-.lightable-classic-2 {
-border-top: 3px double #111111;
-border-bottom: 3px double #111111;
-width: 100%;
-margin-bottom: 10px;
-}
-.lightable-classic-2 tfoot tr td {
-border: 0;
-}
-.lightable-classic-2 tfoot tr:first-child td {
-border-top: 3px double #111111;
-}
-.lightable-classic-2 caption {
-color: #222222;
-}
-.lightable-classic-2 td {
-padding-left: 5px;
-padding-right: 5px;
-color: #222222;
-}
-.lightable-classic-2 th {
-padding-left: 5px;
-padding-right: 5px;
-font-weight: normal;
-color: #222222;
-}
-.lightable-classic-2 tbody tr:last-child td {
-border-bottom: 3px double #111111;
-}
-.lightable-classic-2 thead tr:last-child th {
-border-bottom: 1px solid #111111;
-}
-.lightable-classic-2.lightable-hover tbody tr:hover {
-background-color: #F9EEC1;
-}
-.lightable-classic-2.lightable-striped tbody tr:nth-child(even) {
-background-color: #f5f5f5;
-}
-.lightable-material {
-min-width: 100%;
-white-space: nowrap;
-table-layout: fixed;
-font-family: Roboto, sans-serif;
-border: 1px solid #EEE;
-border-collapse: collapse;
-margin-bottom: 10px;
-}
-.lightable-material tfoot tr td {
-border: 0;
-}
-.lightable-material tfoot tr:first-child td {
-border-top: 1px solid #EEE;
-}
-.lightable-material th {
-height: 56px;
-padding-left: 16px;
-padding-right: 16px;
-}
-.lightable-material td {
-height: 52px;
-padding-left: 16px;
-padding-right: 16px;
-border-top: 1px solid #eeeeee;
-}
-.lightable-material.lightable-hover tbody tr:hover {
-background-color: #f5f5f5;
-}
-.lightable-material.lightable-striped tbody tr:nth-child(even) {
-background-color: #f5f5f5;
-}
-.lightable-material.lightable-striped tbody td {
-border: 0;
-}
-.lightable-material.lightable-striped thead tr:last-child th {
-border-bottom: 1px solid #ddd;
-}
-.lightable-material-dark {
-min-width: 100%;
-white-space: nowrap;
-table-layout: fixed;
-font-family: Roboto, sans-serif;
-border: 1px solid #FFFFFF12;
-border-collapse: collapse;
-margin-bottom: 10px;
-background-color: #363640;
-}
-.lightable-material-dark tfoot tr td {
-border: 0;
-}
-.lightable-material-dark tfoot tr:first-child td {
-border-top: 1px solid #FFFFFF12;
-}
-.lightable-material-dark th {
-height: 56px;
-padding-left: 16px;
-padding-right: 16px;
-color: #FFFFFF60;
-}
-.lightable-material-dark td {
-height: 52px;
-padding-left: 16px;
-padding-right: 16px;
-color: #FFFFFF;
-border-top: 1px solid #FFFFFF12;
-}
-.lightable-material-dark.lightable-hover tbody tr:hover {
-background-color: #FFFFFF12;
-}
-.lightable-material-dark.lightable-striped tbody tr:nth-child(even) {
-background-color: #FFFFFF12;
-}
-.lightable-material-dark.lightable-striped tbody td {
-border: 0;
-}
-.lightable-material-dark.lightable-striped thead tr:last-child th {
-border-bottom: 1px solid #FFFFFF12;
-}
-.lightable-paper {
-width: 100%;
-margin-bottom: 10px;
-color: #444;
-}
-.lightable-paper tfoot tr td {
-border: 0;
-}
-.lightable-paper tfoot tr:first-child td {
-border-top: 1px solid #00000020;
-}
-.lightable-paper thead tr:last-child th {
-color: #666;
-vertical-align: bottom;
-border-bottom: 1px solid #00000020;
-line-height: 1.15em;
-padding: 10px 5px;
-}
-.lightable-paper td {
-vertical-align: middle;
-border-bottom: 1px solid #00000010;
-line-height: 1.15em;
-padding: 7px 5px;
-}
-.lightable-paper.lightable-hover tbody tr:hover {
-background-color: #F9EEC1;
-}
-.lightable-paper.lightable-striped tbody tr:nth-child(even) {
-background-color: #00000008;
-}
-.lightable-paper.lightable-striped tbody td {
-border: 0;
-}
-</style>
 <script>(function() {
   // If window.HTMLWidgets is already defined, then use it; otherwise create a
   // new object. This allows preceding code to set options that affect the
@@ -2289,7 +2065,7 @@ code span.ot { color: #007020; }
 <h1 class="title toc-ignore entry-title">The CircTarget package - Explore the circRNA expression profiling molecular pathways</h1>
 <h3 class="author">Alessia Buratin</h3>
 <address class="author_afil">
-Departement of Biology, Department of Molecular Medicine, University of Padova<br><h3 class="date">02-12-2020</h3>
+Departement of Biology, Department of Molecular Medicine, University of Padova<br><h3 class="date">04-12-2020</h3>
 </div><!-- /.header-title-wrap -->
 </header>
 
@@ -2343,7 +2119,9 @@ Departement of Biology, Department of Molecular Medicine, University of Padova<b
 <a class="sourceLine" id="cb2-16" data-line-number="16"><span class="kw">library</span>(sparkline)</a>
 <a class="sourceLine" id="cb2-17" data-line-number="17"><span class="kw">library</span>(tidyverse)</a>
 <a class="sourceLine" id="cb2-18" data-line-number="18"><span class="kw">library</span>(RColorBrewer)</a>
-<a class="sourceLine" id="cb2-19" data-line-number="19"><span class="kw">library</span>(purrr)</a></code></pre></div>
+<a class="sourceLine" id="cb2-19" data-line-number="19"><span class="kw">library</span>(purrr)</a>
+<a class="sourceLine" id="cb2-20" data-line-number="20"><span class="kw">library</span>(magrittr)</a>
+<a class="sourceLine" id="cb2-21" data-line-number="21"><span class="kw">library</span>(webshot)</a></code></pre></div>
 <hr />
 <div id="input-data" class="section level3">
 <h3>Input data</h3>
@@ -2390,17 +2168,16 @@ Departement of Biology, Department of Molecular Medicine, University of Padova<b
 <p>To establish a possible impact of circRNA in gene expression using different molecular subtypes of human T-ALL we select a subset of circRNA defined as markers: at first by using k-means algorithm we separate samples in two main cluster defined by the circRNA expression, then only circRNA which DESeq adj. p-value&lt;.1 and log fold-change&gt;1.5 have been selected.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"></a>
 <a class="sourceLine" id="cb5-2" data-line-number="2">circtarget &lt;-<span class="st"> </span><span class="kw">marker.selection</span>(<span class="dt">dat =</span> circNormDeseq, <span class="dt">dds =</span> dds.filt.expr, <span class="dt">sf =</span> sf.filt, <span class="dt">p.cutoff =</span> <span class="fl">0.05</span>, <span class="dt">lfc.cutoff =</span> <span class="fl">1.5</span>, </a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">                                 <span class="dt">method.d =</span> <span class="st">&quot;euclidean&quot;</span>, <span class="dt">method.c =</span> <span class="st">&quot;ward.D2&quot;</span>, <span class="dt">k =</span> <span class="dv">2</span>, <span class="dt">plot =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<a class="sourceLine" id="cb5-3" data-line-number="3">                                 <span class="dt">method.d =</span> <span class="st">&quot;euclidean&quot;</span>, <span class="dt">method.c =</span> <span class="st">&quot;ward.D2&quot;</span>, <span class="dt">k =</span> <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="kw">print</span>(circtarget<span class="op">$</span>plot)</a></code></pre></div>
 <p>The result <code>list</code> will include:</p>
 <ul>
 <li>circ.markers - a data frame with DESeq estimates for each circRNAs.<br />
 </li>
 <li>circ.targets - a vector of circRNAs defined as possible targets.</li>
 <li>group.df - data.frame with a variable group that indicate the new stratification of samples by circRNAs expression.</li>
+<li>plot - formatted table with info. about circTarget expression ### Density expression of circRNA-markers</li>
 </ul>
-</div>
-<div id="density-expression-of-circrna-markers" class="section level3">
-<h3>Density expression of circRNA-markers</h3>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">circMark &lt;-<span class="st"> </span>circtarget<span class="op">$</span>circ.targetIDS[<span class="dv">1</span>]</a>
 <a class="sourceLine" id="cb6-2" data-line-number="2">circMark_group.df &lt;-<span class="st"> </span>circtarget<span class="op">$</span>group.df[circtarget<span class="op">$</span>group.df<span class="op">$</span>circ_id<span class="op">==</span>circMark,]</a>
 <a class="sourceLine" id="cb6-3" data-line-number="3">circMark_group.df<span class="op">$</span>counts &lt;-<span class="st"> </span><span class="kw">merge</span>(circMark_group.df, reshape2<span class="op">::</span><span class="kw">melt</span>(circNormDeseq[circMark,]), <span class="dt">by.x =</span> <span class="st">&quot;sample_id&quot;</span>, <span class="dt">by.y =</span> <span class="st">&quot;row.names&quot;</span>)[,<span class="st">&quot;value&quot;</span>]</a>
@@ -2625,104 +2402,283 @@ Departement of Biology, Department of Molecular Medicine, University of Padova<b
 <a class="sourceLine" id="cb14-15" data-line-number="15">}</a></code></pre></div>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1"></a>
 <a class="sourceLine" id="cb15-2" data-line-number="2">gene_mark &lt;-<span class="st"> </span><span class="kw">as.data.table</span>(gene_mark)</a>
-<a class="sourceLine" id="cb15-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb15-4" data-line-number="4">gene_mark &lt;-<span class="st"> </span>dplyr<span class="op">::</span><span class="kw">rename</span>(gene_mark, <span class="st">&quot;circRNA_markers&quot;</span> =<span class="st"> &quot;markers.circrnas[i]&quot;</span>)</a>
-<a class="sourceLine" id="cb15-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb15-6" data-line-number="6">knitr<span class="op">::</span><span class="kw">kable</span>(gene_mark <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw">group_by</span>(circRNA_markers, n.degs) <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb15-7" data-line-number="7">dplyr<span class="op">::</span><span class="kw">summarise</span>(<span class="dt">DEGs =</span> <span class="kw">paste</span>(<span class="kw">sort</span>(gene_id),<span class="dt">collapse=</span><span class="st">&quot;, &quot;</span>)),</a>
-<a class="sourceLine" id="cb15-8" data-line-number="8">      <span class="dt">escape =</span> F, <span class="dt">align =</span> <span class="st">&quot;c&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">caption =</span> <span class="st">&quot;circRNA-DEGs assosiation&quot;</span>) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">kable_styling</span>(<span class="kw">c</span>(<span class="st">&quot;striped&quot;</span>), <span class="dt">full_width =</span> T)</a>
-<a class="sourceLine" id="cb15-9" data-line-number="9"><span class="co">#&gt; `summarise()` regrouping output by 'circRNA_markers' (override with `.groups` argument)</span></a></code></pre></div>
-<table class="table table-striped" style="margin-left: auto; margin-right: auto;">
-<caption>
-circRNA-DEGs assosiation
-</caption>
+<a class="sourceLine" id="cb15-3" data-line-number="3">gene_mark <span class="op">%&gt;%</span><span class="st"> </span>dplyr<span class="op">::</span><span class="kw">rename</span>(<span class="st">&quot;circTarget&quot;</span> =<span class="st"> &quot;markers.circrnas[i]&quot;</span>, <span class="st">&quot;Gene&quot;</span> =<span class="st"> &quot;gene_id&quot;</span>, <span class="st">&quot;logFC&quot;</span> =<span class="st"> &quot;log2FoldChange&quot;</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="st">  </span><span class="kw">arrange</span>(padj) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb15-5" data-line-number="5"><span class="st">  </span><span class="kw">select</span>(circTarget, Gene, logFC) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">head</span>(<span class="dv">20</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="st">  </span>formattable<span class="op">::</span><span class="kw">formattable</span>(., <span class="dt">align =</span> <span class="kw">c</span>(<span class="st">&quot;c&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;c&quot;</span>), <span class="kw">list</span>(</a>
+<a class="sourceLine" id="cb15-7" data-line-number="7">          <span class="dt">gene_id =</span> formattable<span class="op">::</span><span class="kw">formatter</span>(<span class="st">&quot;span&quot;</span>, <span class="dt">style =</span> <span class="op">~</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw">style</span>(<span class="dt">color =</span> <span class="st">&quot;grey&quot;</span>, <span class="dt">font.weight =</span> <span class="st">&quot;bold&quot;</span>)),</a>
+<a class="sourceLine" id="cb15-8" data-line-number="8">          <span class="dt">circTarget =</span> formattable<span class="op">::</span><span class="kw">formatter</span>(<span class="st">&quot;span&quot;</span>, <span class="dt">style =</span> <span class="op">~</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw">style</span>(<span class="dt">color =</span> <span class="st">&quot;grey&quot;</span>, <span class="dt">font.weight =</span> <span class="st">&quot;bold&quot;</span>)),</a>
+<a class="sourceLine" id="cb15-9" data-line-number="9">          <span class="dt">logFC =</span> CircTarget<span class="op">::</span><span class="kw">color_tile3</span>(<span class="dt">digits =</span> <span class="dv">3</span>, <span class="dt">n =</span> <span class="dv">18</span>, <span class="dt">fun =</span> <span class="st">&quot;comma&quot;</span>, <span class="dt">palette =</span> <span class="st">&quot;PiYG&quot;</span>)))</a></code></pre></div>
+<table class="table table-condensed">
 <thead>
 <tr>
-<th style="text-align:left;">
+<th style="text-align:center;">
+circTarget
 </th>
 <th style="text-align:center;">
-circRNA_markers
+Gene
 </th>
 <th style="text-align:center;">
-n.degs
-</th>
-<th style="text-align:center;">
-DEGs
+logFC
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left;">
-1
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">2:26263380-26277160 </span>
 </td>
 <td style="text-align:center;">
-2:26263380-26277160
+ANXA8
 </td>
 <td style="text-align:center;">
-104
-</td>
-<td style="text-align:center;">
-AC003991.1, AC005342.2, AC008269.1, AC008982.1, AC010148.1, AC010531.1, AC019117.1, AC021097.2, AC025219.1, AC026954.2, AC079921.2, AC130456.3, AC135050.2, AC243967.1, ADAMTS18, ADCY4, ADORA2A-AS1, AHNAK2, AKR1C2, AL079301.1, AMY2A, ANXA8, AP001273.2, AP005328.1, ARMC4P1, B4GALNT4, BDNF, BMS1P16, BUB1B-PAK6, CCDC102A, CCDC144A, CCDC152, CCDC170, CDK15, CEMIP, CFAP47, CLEC4F, CLNK, CNFN, CNTNAP5, COL1A2, COLEC11, CRYM, CU634019.4, DCAF8, DCUN1D5, DEPDC7, DOCK1, DPY19L2P1, DUOX2, ENPP7P6, FADS2, FAM210A, FAM86KP, FANCD2P2, FOXP2, FREM1, GOLGA8IP, GOLGA8J, GRB14, H19, HERC2P4, HIST1H3F, HIST1H3G, IL1RAPL1, INO80B-WBP1, ISL2, KIAA0319, KIR2DL4, KRT86, LARP6, LIN28B, LINC00544, LINC02193, LINGO2, LMCD1, LTB4R2, MDGA2, MIR100HG, MIR1244-1, MIR466, NPTX1, NR3C1, NRXN1, PANX2, PAX9, PFKFB3, PI4KAP1, PRKN, SHOX2, SLAIN1, SLC5A10, SMC1B, SYNJ2BP-COX16, TLE6, TMEM40, TMEM45A, TPCN1, TSPEAR-AS1, TUBB3, UBL4A, USP32P1, VWA3A, WNT8A
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #67B645">-26.553</span>
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-2
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
 </td>
 <td style="text-align:center;">
-14:22926133-22927660
+CFAP43
 </td>
 <td style="text-align:center;">
-301
-</td>
-<td style="text-align:center;">
-ABBA01000935.2, ABCA9-AS1, ABO, AC002310.5, AC005224.3, AC005224.4, AC005993.1, AC006116.1, AC008033.3, AC008083.2, AC008750.8, AC008878.2, AC009119.1, AC012254.2, AC018512.1, AC018716.2, AC020629.1, AC020656.2, AC025048.2, AC026954.1, AC026954.2, AC048380.2, AC068860.1, AC068946.1, AC074327.1, AC084809.1, AC090510.1, AC090517.4, AC092634.3, AC092651.1, AC092745.1, AC093274.1, AC104035.1, AC109466.1, AC112229.3, AC112487.1, AC113615.1, AC118758.1, AC131025.1, AC135068.8, AC137834.1, AC139495.1, AC145212.1, AC146944.2, AC243562.1, AC245389.2, AD000671.1, ADAMTS18, ADAMTS2, ADAMTSL2, ADCY6, ADCY9, ADRB1, AF254983.1, AFAP1L1, AGRN, AK4, AK4P1, AL121900.2, AL122008.2, AL139289.2, AL159163.1, AL161725.1, AL163540.1, AL512625.3, AL591368.1, AL731567.1, ANK3, ANKRD20A9P, AP000547.3, AP001372.1, AP002008.3, ARFGAP1, ARHGAP39, ARHGEF28, ASPHD1, ATCAY, ATP1B2, BTC, BX649567.1, C1orf115, CA6, CADM1, CCDC144NL, CCDC173, CCNT2-AS1, CD22, CDK14, CDS1, CFAP43, CFAP47, CHURC1-FNTB, CLNK, CLSTN2, CMTM4, CNMD, CNNM1, COBLL1, COL1A1, COL4A1, COL6A1, CPA4, CPHL1P, CPNE5, CR848007.1, CRABP1, CRIP3, CRMP1, CUX2, CXorf57, CYP2F2P, CYP2S1, DDX43, DLG2, DLL3, DNAH17, DPEP3, DPP10, DST, DTX4, DUX4L27, EEF1A2, ELF3, ELOVL2, ENAH, ENKUR, ENPEP, EPCAM, ERBB3, EVC2, FAM19A1, FAM238C, FAM241B, FAT4, FBLN2, FCRL6, FGD1, FGFR2, FHOD3, FRMPD3, FRY-AS1, FSTL3, FXYD6-FXYD2, FZD6, GFRA1, GGCX, GPAT2, GRAMD1A, GRB14, GTSCR1, GTSF1, HHIP, HHIP-AS1, HLA-L, HNRNPCP4, HOOK1, HS3ST1, IFITM1, IGF2BP3, IGHV1-46, IGHV1OR15-2, IGHV3-73, IGKV2-28, IL6ST, IL9RP3, INO80B-WBP1, IQCA1, IRX1, ITGAD, ITIH3, JAKMIP2, KCNMA1, KCNN2, KCNQ3, KIAA0319, KIF21A, KIR2DL4, KLRC4-KLRK1, KRT128P, KSR2, LAMC1, LIMCH1, LINC00032, LINC00544, LINC00887, LINC00939, LINC01068, LINC01105, LINC01725, LINC01783, LINC02026, LINC02340, LINC02384, LINC02520, LIPH, LMCD1, LOXL4, LPL, LRIG3, MAML2, MAP2, MAPRE1P3, MB, METTL24, MLF1, MRAS, MROH7, MUC1, MYBPC3, MYO6, NAV2, NBPF13P, NCOA7, NDFIP2, NKAIN4, NSFP1, OTOA, P3H2, PATJ, PCDH19, PCOTH, PITX2, PKD1L1, PLEKHS1, PPEF1, PPEF2, PPM1J, PPP1R14C, PPP1R17, PRAG1, PRG4, PRKAA2, PRSS23, PTCHD1, PTGES3L-AARSD1, PTPRB, PTPRR, RASAL1, RASGRF2, RASSF8, RASSF8-AS1, RBFOX3, RHOH, RIMS2, RN7SL471P, RPS10-NUDT3, RUNDC3A-AS1, RUNDC3B, SAMD12-AS1, SDHAP2, SIGLEC1, SLC25A4, SLCO5A1, SLIT3, SMC1B, SMC2-AS1, SNORA27, SNORA6, SOGA3, SUGCT, SVEP1, SYTL2, TBC1D28, TBC1D8B, TCP11, TEAD4, TEX29, TFAP2A-AS1, TFPI2, THEGL, TMC7, TMEM132D, TMEM185AP1, TMEM246, TMEM266, TNNC2, TOX, TRAJ36, TRAJ40, TRAJ43, TRAV12-1, TRBV12-4, TRIM60P17, TRPS1, TSPAN1, TTLL9, UCHL1, UGT8, ULBP1, UNC45B, USH2A, WASF1, WASHC4, WBP1LP1, WDR64, WHRN, Z98200.1, ZNF132, ZNF205, ZNF532, ZNF727
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D84898">24.444</span>
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
-3
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
 </td>
 <td style="text-align:center;">
-12:111554158-111555919
+PCDH19
 </td>
 <td style="text-align:center;">
-218
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D01B8B">30.000</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
 </td>
 <td style="text-align:center;">
-ABCA9, ABCA9-AS1, AC005871.2, AC006064.6, AC007192.1, AC007383.2, AC007637.1, AC008982.1, AC009541.1, AC012254.3, AC018755.2, AC023055.1, AC034195.1, AC069277.1, AC096537.1, AC096708.3, AC097713.1, AC104662.2, AC106799.2, AC113615.1, AC117373.1, AC126696.3, AC131009.3, AC134980.3, AC137834.1, AC138627.1, AC245407.2, AD000671.1, ADGRL3, AF254983.1, AFAP1L1, AHNAK2, AIF1L, AL022069.2, AL031846.1, AL132780.2, AL136419.1, AL138899.1, AL138899.2, AL139351.1, AL157392.5, AL158055.1, AL159163.1, AL160313.1, AL365436.2, AL365440.2, AL590999.1, AL645922.1, ALK, ALOX5AP, AMY2A, ANKRD18EP, ANKZF1, ANTXRL, AP002478.1, AP3B2, ARHGAP23P1, ARHGAP32, ARHGAP39, ARHGEF28, ARSE, ARSJ, ASPDH, B2M, BIRC7, BIVM-ERCC5, BMPR1A, C1QC, C2orf40, C4orf36, C4orf50, CA6, CADM4, CAMSAP3, CARD17, CASC8, CCDC187, CCDC192, CCL2, CCL3, CD1B, CD1D, CD1E, CD70, CDHR1, CDRT1, CENPU, CHRNA6, CISH, CMTM5, CNTN1, COL15A1, COL1A2, COMMD7, CRYM, CRYZP1, CSF1, CTSV, CTTNBP2, CYP2S1, CYP46A1, DERL3, DLGAP1, DMKN, EFNB3, EPDR1, EPHB6, ESYT3, FAM160A1, FAM241B, FBXL2, FGD1, FLRT3, FREM1, FRMPD2, GBP1, GBP7, GLYATL2, GOLGA6L3, GOLGA8DP, GP9, GRIK2, GRM8, GSC, HAP1, HAPLN2, HORMAD1, HOXA11, HRK, IL5RA, INTS4P2, ISM1, ITIH3, KCNK1, KCNN2, KCNQ3, KHDC4, KLHL35, KRT23, KSR2, LAMC3, LAMP3, LARP6, LGALS1, LINC00494, LINC00544, LINC01303, LINC01506, LINC02037, LINC02203, LINC02520, LPIN2, LRIG3, LRIT3, LRP4-AS1, LRRC43, MAGT1, MAP1B, MAPT, MC4R, MOCS1, MPP4, MPPED2, MSN, NCS1, NEIL1, NMRAL2P, PARD3-AS1, PAX9, PDZK1P1, PFKFB2, PLCE1, PPM1A, PRKAA2, PRSS57, PTCHD1, PTGER2, PTGES3L-AARSD1, PTPN3, RAG1, RAG2, RASAL1, RCC2P6, RGS13, RGS18, RMST, RNU1-27P, RNU12, RNU2-64P, RORA, RUNDC3B, SH3RF2, SIGLECL1, SLC17A3, SSTR3, ST3GAL4, STAR, TFAP2A-AS1, TFAP2C, TFCP2L1, TFEC, TLX1, TMEM132D, TNIP3, TOMM20P2, TRBV30, TRGC1, TRGJ1, TRGV5, TRH, TSPAN1, TTC29, TUFT1, UBR7, VPS37D, WDR17, ZNF410, ZNF48
+CLSTN2
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D84898">26.579</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
+</td>
+<td style="text-align:center;">
+FGFR2
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D01B8B">28.984</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
+</td>
+<td style="text-align:center;">
+LMCD1
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D84898">26.144</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">12:111554158-111555919</span>
+</td>
+<td style="text-align:center;">
+BIRC7
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #7FC160">-22.835</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
+</td>
+<td style="text-align:center;">
+EVC2
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D84898">24.993</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
+</td>
+<td style="text-align:center;">
+CNNM1
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D84898">26.077</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">2:26263380-26277160 </span>
+</td>
+<td style="text-align:center;">
+CNTNAP5
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck">-30.000</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">2:26263380-26277160 </span>
+</td>
+<td style="text-align:center;">
+FAM86KP
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #4CAC26">-29.851</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">12:111554158-111555919</span>
+</td>
+<td style="text-align:center;">
+SLC17A3
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #7FC160">-23.078</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">12:111554158-111555919</span>
+</td>
+<td style="text-align:center;">
+COL1A2
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck">-30.000</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">12:111554158-111555919</span>
+</td>
+<td style="text-align:center;">
+TTC29
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #4CAC26">-29.895</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">12:111554158-111555919</span>
+</td>
+<td style="text-align:center;">
+ARHGAP23P1
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #4CAC26">-29.738</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
+</td>
+<td style="text-align:center;">
+ELOVL2
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D84898">24.041</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">2:26263380-26277160 </span>
+</td>
+<td style="text-align:center;">
+INO80B-WBP1
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #4CAC26">-27.268</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
+</td>
+<td style="text-align:center;">
+THEGL
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #E882B5">19.711</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">14:22926133-22927660 </span>
+</td>
+<td style="text-align:center;">
+FHOD3
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #D01B8B">29.999</span>
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+<span style="color: grey; font-weight: bold">12:111554158-111555919</span>
+</td>
+<td style="text-align:center;">
+MAP1B
+</td>
+<td style="text-align:center;">
+<span style="display: block; padding: 0 4px; border-radius: 4px; color: balck; background-color: #EE9CC3">15.342</span>
 </td>
 </tr>
 </tbody>
 </table>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1"></a>
+<a class="sourceLine" id="cb16-2" data-line-number="2">gene_mark &lt;-<span class="st"> </span>dplyr<span class="op">::</span><span class="kw">rename</span>(gene_mark, <span class="st">&quot;circTarget&quot;</span> =<span class="st"> &quot;markers.circrnas[i]&quot;</span>, <span class="st">&quot;Gene&quot;</span> =<span class="st"> &quot;gene_id&quot;</span>)</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3"> </a>
+<a class="sourceLine" id="cb16-4" data-line-number="4"><span class="co"># knitr::kable(gene_mark %&gt;% dplyr::group_by(circRNA_markers, n.degs) %&gt;% </span></a>
+<a class="sourceLine" id="cb16-5" data-line-number="5"><span class="co"># dplyr::summarise(DEGs = paste(sort(gene_id),collapse=&quot;, &quot;)),</span></a>
+<a class="sourceLine" id="cb16-6" data-line-number="6"><span class="co">#       escape = F, align = &quot;c&quot;, row.names = T, caption = &quot;circRNA-DEGs assosiation&quot;) %&gt;% kable_styling(c(&quot;striped&quot;), full_width = T)</span></a></code></pre></div>
 </div>
 <div id="enrichment-analysis" class="section level3">
 <h3>Enrichment analysis</h3>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="co">#subset gene symbol deregulated using the interesting circRNA marker as stratificator</span></a>
-<a class="sourceLine" id="cb16-2" data-line-number="2">geneList &lt;-<span class="st"> </span>gene_mark<span class="op">$</span>log2FoldChange[gene_mark<span class="op">$</span>circRNA_markers<span class="op">==</span>markers.circrnas[<span class="dv">3</span>]]</a>
-<a class="sourceLine" id="cb16-3" data-line-number="3"><span class="kw">names</span>(geneList) &lt;-<span class="st"> </span>gene_mark<span class="op">$</span>gene_id[gene_mark<span class="op">$</span>circRNA_markers<span class="op">==</span>markers.circrnas[<span class="dv">3</span>]]</a>
-<a class="sourceLine" id="cb16-4" data-line-number="4"><span class="co"># order gene list by foldchange</span></a>
-<a class="sourceLine" id="cb16-5" data-line-number="5">geneList =<span class="st"> </span><span class="kw">sort</span>(geneList, <span class="dt">decreasing =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb16-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb16-7" data-line-number="7"><span class="kw">library</span>(gprofiler2)</a>
-<a class="sourceLine" id="cb16-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb16-9" data-line-number="9">gostres2 &lt;-<span class="st"> </span><span class="kw">gost</span>(<span class="dt">query =</span> <span class="kw">names</span>(geneList)[<span class="kw">names</span>(geneList)<span class="op">!=</span><span class="st">&quot;.&quot;</span>], </a>
-<a class="sourceLine" id="cb16-10" data-line-number="10">                 <span class="dt">organism =</span> <span class="st">&quot;hsapiens&quot;</span>, <span class="dt">ordered_query =</span> <span class="ot">TRUE</span>, </a>
-<a class="sourceLine" id="cb16-11" data-line-number="11">                 <span class="dt">multi_query =</span> <span class="ot">FALSE</span>, <span class="dt">significant =</span> <span class="ot">TRUE</span>, <span class="dt">exclude_iea =</span> <span class="ot">FALSE</span>, </a>
-<a class="sourceLine" id="cb16-12" data-line-number="12">                 <span class="dt">measure_underrepresentation =</span> <span class="ot">FALSE</span>, <span class="dt">evcodes =</span> <span class="ot">TRUE</span>, </a>
-<a class="sourceLine" id="cb16-13" data-line-number="13">                 <span class="dt">user_threshold =</span> <span class="fl">0.05</span>, <span class="dt">correction_method =</span> <span class="st">&quot;g_SCS&quot;</span>, </a>
-<a class="sourceLine" id="cb16-14" data-line-number="14">                 <span class="dt">domain_scope =</span> <span class="st">&quot;annotated&quot;</span>, <span class="dt">custom_bg =</span> <span class="ot">NULL</span>, </a>
-<a class="sourceLine" id="cb16-15" data-line-number="15">                 <span class="dt">numeric_ns =</span> <span class="st">&quot;&quot;</span>, <span class="dt">sources =</span> <span class="ot">NULL</span>)</a>
-<a class="sourceLine" id="cb16-16" data-line-number="16">p &lt;-<span class="st"> </span><span class="kw">gostplot</span>(gostres2, <span class="dt">capped =</span> <span class="ot">FALSE</span>, <span class="dt">interactive =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb16-17" data-line-number="17"><span class="co">#&gt; Warning: `group_by_()` is deprecated as of dplyr 0.7.0.</span></a>
-<a class="sourceLine" id="cb16-18" data-line-number="18"><span class="co">#&gt; Please use `group_by()` instead.</span></a>
-<a class="sourceLine" id="cb16-19" data-line-number="19"><span class="co">#&gt; See vignette('programming') for more help</span></a>
-<a class="sourceLine" id="cb16-20" data-line-number="20"><span class="co">#&gt; This warning is displayed once every 8 hours.</span></a>
-<a class="sourceLine" id="cb16-21" data-line-number="21"><span class="co">#&gt; Call `lifecycle::last_warnings()` to see where this warning was generated.</span></a>
-<a class="sourceLine" id="cb16-22" data-line-number="22">p</a></code></pre></div>
-<div id="htmlwidget-8ee4f424c77b20d2cc6f" style="width:672px;height:480px;" class="plotly html-widget"></div>
-<script type="application/json" data-for="htmlwidget-8ee4f424c77b20d2cc6f">{"x":{"data":[{"x":[72.7517247436617,44.1488048310083,72.7496000281727,72.7538494591507],"y":[2.28262076807655,2.28145978010948,1.7427185749142,1.7427185749142],"text":["GO:0048006 (5) <br> antigen processing and presentation, endogenous lipid antigen via MHC class Ib <br> 5.217e-03","GO:0002475 (13) <br> antigen processing and presentation via MHC class Ib <br> 5.230e-03","GO:0048003 (7) <br> antigen processing and presentation of lipid antigen via MHC class Ib <br> 1.808e-02","GO:0048007 (7) <br> antigen processing and presentation, exogenous lipid antigen via MHC class Ib <br> 1.808e-02"],"key":["GO:0048006","GO:0002475","GO:0048003","GO:0048007"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(255,153,0,1)","opacity":0.8,"size":[10.602946985238,13.5320148877374,11.7580022974376,11.7580022974376],"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(255,153,0,1)"}},"hoveron":"points","set":"SharedDataf46ca458","name":"GO:BP","legendgroup":"GO:BP","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","_isNestedKey":false,"frame":null},{"x":[37.3854827130724,37.8827612494041,38.0378951517641,38.3800397857359],"y":[1.9947532665828,1.75401724835477,1.38449585154889,1.30578736827096],"text":["GO:0097519 (2) <br> DNA recombinase complex <br> 1.012e-02","GO:0098794 (591) <br> postsynapse <br> 1.762e-02","GO:0098978 (248) <br> glutamatergic synapse <br> 4.126e-02","GO:0120025 (2256) <br> plasma membrane bounded cell projection <br> 4.946e-02"],"key":["GO:0097519","GO:0098794","GO:0098978","GO:0120025"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(16,150,24,1)","opacity":0.8,"size":[3.77952755905512,20.7811648509745,19.4297899879877,22.6771653543307],"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(16,150,24,1)"}},"hoveron":"points","set":"SharedDataf46ca458","name":"GO:CC","legendgroup":"GO:CC","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","_isNestedKey":false,"frame":null},{"x":[12.7345887741418,12.7367135937725,12.7324639545111,23.4351804341929],"y":[2.74799887969387,2.74799887969387,2.44898645821247,1.67890006579844],"text":["GO:0030883 (5) <br> endogenous lipid antigen binding <br> 1.786e-03","GO:0030884 (5) <br> exogenous lipid antigen binding <br> 1.786e-03","GO:0030882 (6) <br> lipid antigen binding <br> 3.556e-03","GO:0071723 (10) <br> lipopeptide binding <br> 2.095e-02"],"key":["GO:0030883","GO:0030884","GO:0030882","GO:0071723"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(220,57,18,1)","opacity":0.8,"size":[10.602946985238,10.602946985238,11.251024913009,12.8227358592199],"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(220,57,18,1)"}},"hoveron":"points","set":"SharedDataf46ca458","name":"GO:MF","legendgroup":"GO:MF","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","_isNestedKey":false,"frame":null},{"x":[150.153542929455,150.312952682825,146.808063572065],"y":[2.05363334354367,1.80563187532583,1.77221911449672],"text":["MIRNA:hsa-miR-7154-5p (58) <br> hsa-miR-7154-5p <br> 8.838e-03","MIRNA:hsa-miR-8060 (77) <br> hsa-miR-8060 <br> 1.564e-02","MIRNA:hsa-miR-382-3p (80) <br> hsa-miR-382-3p <br> 1.690e-02"],"key":["MIRNA:hsa-miR-7154-5p","MIRNA:hsa-miR-8060","MIRNA:hsa-miR-382-3p"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(34,170,153,1)","opacity":0.8,"size":[16.8600791172217,17.3993363250473,17.4704481798115],"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(34,170,153,1)"}},"hoveron":"points","set":"SharedDataf46ca458","name":"MIRNA","legendgroup":"MIRNA","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","_isNestedKey":false,"frame":null},{"x":[2,27.9844192634561],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(220,57,18,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[30.1090651558074,39.5934844192635],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(16,150,24,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[41.7181303116147,106.581444759207],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(255,153,0,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[108.706090651558,109.849150141643],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(221,68,119,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[111.973796033994,117.123937677054],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(51,102,204,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[119.248583569405,142.868271954674],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(85,116,166,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[144.992917847026,150.516997167139],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(34,170,153,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[152.64164305949,153.686968838527],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(102,51,204,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[155.811614730878,162.009206798867],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(102,170,0,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[164.133852691218,196.528328611898],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(153,0,153,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[198.652974504249,200.002124645892],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(0,153,198,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":29.2835201328352,"r":6.6417600664176,"b":55.8781661388202,"l":49.3482772934828},"plot_bgcolor":"rgba(255,255,255,1)","paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[0,210],"tickmode":"array","ticktext":["GO:MF","GO:CC","GO:BP","KEGG","REAC","TF","MIRNA","HPA","CORUM","HP","WP"],"tickvals":[14.992209631728,34.8512747875354,74.1497875354108,109.277620396601,114.548866855524,131.05842776204,147.754957507082,153.164305949009,158.910410764873,180.331090651558,199.327549575071],"categoryorder":"array","categoryarray":["GO:MF","GO:CC","GO:BP","KEGG","REAC","TF","MIRNA","HPA","CORUM","HP","WP"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":10.6268161062682},"tickangle":-45,"showline":true,"linecolor":"rgba(190,190,190,1)","linewidth":0.132835201328352,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"y","title":"","hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1,8],"tickmode":"array","ticktext":["0","2","4","6","8"],"tickvals":[0,2,4,6,8],"categoryorder":"array","categoryarray":["0","2","4","6","8"],"nticks":null,"ticks":"outside","tickcolor":"rgba(190,190,190,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":true,"linecolor":"rgba(190,190,190,1)","linewidth":0.66417600664176,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"x","title":"","hoverformat":".2f"},"annotations":[{"text":"-log10(p-adj)","x":-0.0180128091086995,"y":0.5,"showarrow":false,"ax":0,"ay":0,"font":{"color":"rgba(0,0,0,1)","family":"","size":13.2835201328352},"xref":"paper","yref":"paper","textangle":-90,"xanchor":"right","yanchor":"center","annotationType":"axis"},{"text":"query_1","x":0.5,"y":1,"showarrow":false,"ax":0,"ay":0,"font":{"color":"rgba(169,169,169,1)","family":"","size":13.2835201328352},"xref":"paper","yref":"paper","textangle":-0,"xanchor":"center","yanchor":"bottom"}],"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1},{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":24.9730178497302,"yanchor":1,"ysizemode":"pixel"}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative","dragmode":"zoom"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"47b025dc9432":{"colour":{},"size":{},"alpha":{},"key":{},"x":{},"y":{},"text":{},"type":"scatter"},"47b0a1b3df0":{"x":{},"xend":{},"y":{},"yend":{}},"47b06ceae7df":{"x":{},"xend":{},"y":{},"yend":{}},"47b068abb1cb":{"x":{},"xend":{},"y":{},"yend":{}},"47b058865189":{"x":{},"xend":{},"y":{},"yend":{}},"47b06289a16":{"x":{},"xend":{},"y":{},"yend":{}},"47b02042d6c":{"x":{},"xend":{},"y":{},"yend":{}},"47b05d9daa14":{"x":{},"xend":{},"y":{},"yend":{}},"47b03658c8fd":{"x":{},"xend":{},"y":{},"yend":{}},"47b03f250451":{"x":{},"xend":{},"y":{},"yend":{}},"47b0633934f1":{"x":{},"xend":{},"y":{},"yend":{}},"47b0d1897c6":{"x":{},"xend":{},"y":{},"yend":{}}},"cur_data":"47b025dc9432","visdat":{"47b025dc9432":["function (y) ","x"],"47b0a1b3df0":["function (y) ","x"],"47b06ceae7df":["function (y) ","x"],"47b068abb1cb":["function (y) ","x"],"47b058865189":["function (y) ","x"],"47b06289a16":["function (y) ","x"],"47b02042d6c":["function (y) ","x"],"47b05d9daa14":["function (y) ","x"],"47b03658c8fd":["function (y) ","x"],"47b03f250451":["function (y) ","x"],"47b0633934f1":["function (y) ","x"],"47b0d1897c6":["function (y) ","x"]},"highlight":{"on":"plotly_click","off":"plotly_doubleclick","persistent":false,"dynamic":false,"color":null,"selectize":false,"defaultValues":null,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0,"ctGroups":["SharedDataf46ca458"]},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" data-line-number="1"><span class="co">#subset gene symbol deregulated using the interesting circRNA marker as stratificator</span></a>
+<a class="sourceLine" id="cb17-2" data-line-number="2">geneList &lt;-<span class="st"> </span>gene_mark<span class="op">$</span>log2FoldChange[gene_mark<span class="op">$</span>circTarget<span class="op">==</span>markers.circrnas[<span class="dv">3</span>]]</a>
+<a class="sourceLine" id="cb17-3" data-line-number="3"><span class="co"># order gene list by foldchange</span></a>
+<a class="sourceLine" id="cb17-4" data-line-number="4">geneList =<span class="st"> </span><span class="kw">sort</span>(geneList, <span class="dt">decreasing =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb17-5" data-line-number="5"><span class="kw">names</span>(geneList) &lt;-<span class="st"> </span>gene_mark<span class="op">$</span>Gene[gene_mark<span class="op">$</span>circTarget<span class="op">==</span>markers.circrnas[<span class="dv">3</span>]]</a>
+<a class="sourceLine" id="cb17-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb17-7" data-line-number="7"><span class="kw">library</span>(gprofiler2)</a>
+<a class="sourceLine" id="cb17-8" data-line-number="8"></a>
+<a class="sourceLine" id="cb17-9" data-line-number="9">gostres2 &lt;-<span class="st"> </span><span class="kw">gost</span>(<span class="dt">query =</span> <span class="kw">names</span>(geneList)[<span class="kw">names</span>(geneList)<span class="op">!=</span><span class="st">&quot;.&quot;</span>], </a>
+<a class="sourceLine" id="cb17-10" data-line-number="10">                 <span class="dt">organism =</span> <span class="st">&quot;hsapiens&quot;</span>, <span class="dt">ordered_query =</span> <span class="ot">TRUE</span>, </a>
+<a class="sourceLine" id="cb17-11" data-line-number="11">                 <span class="dt">multi_query =</span> <span class="ot">FALSE</span>, <span class="dt">significant =</span> <span class="ot">TRUE</span>, <span class="dt">exclude_iea =</span> <span class="ot">FALSE</span>, </a>
+<a class="sourceLine" id="cb17-12" data-line-number="12">                 <span class="dt">measure_underrepresentation =</span> <span class="ot">FALSE</span>, <span class="dt">evcodes =</span> <span class="ot">TRUE</span>, </a>
+<a class="sourceLine" id="cb17-13" data-line-number="13">                 <span class="dt">user_threshold =</span> <span class="fl">0.05</span>, <span class="dt">correction_method =</span> <span class="st">&quot;g_SCS&quot;</span>, </a>
+<a class="sourceLine" id="cb17-14" data-line-number="14">                 <span class="dt">domain_scope =</span> <span class="st">&quot;annotated&quot;</span>, <span class="dt">custom_bg =</span> <span class="ot">NULL</span>, </a>
+<a class="sourceLine" id="cb17-15" data-line-number="15">                 <span class="dt">numeric_ns =</span> <span class="st">&quot;&quot;</span>, <span class="dt">sources =</span> <span class="ot">NULL</span>)</a>
+<a class="sourceLine" id="cb17-16" data-line-number="16">p &lt;-<span class="st"> </span><span class="kw">gostplot</span>(gostres2, <span class="dt">capped =</span> <span class="ot">FALSE</span>, <span class="dt">interactive =</span> <span class="ot">TRUE</span>)</a>
+<a class="sourceLine" id="cb17-17" data-line-number="17"><span class="co">#&gt; Warning: `group_by_()` is deprecated as of dplyr 0.7.0.</span></a>
+<a class="sourceLine" id="cb17-18" data-line-number="18"><span class="co">#&gt; Please use `group_by()` instead.</span></a>
+<a class="sourceLine" id="cb17-19" data-line-number="19"><span class="co">#&gt; See vignette('programming') for more help</span></a>
+<a class="sourceLine" id="cb17-20" data-line-number="20"><span class="co">#&gt; This warning is displayed once every 8 hours.</span></a>
+<a class="sourceLine" id="cb17-21" data-line-number="21"><span class="co">#&gt; Call `lifecycle::last_warnings()` to see where this warning was generated.</span></a>
+<a class="sourceLine" id="cb17-22" data-line-number="22">p</a></code></pre></div>
+<div id="htmlwidget-71fe60c394fb7ea84e73" style="width:672px;height:480px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="htmlwidget-71fe60c394fb7ea84e73">{"x":{"data":[{"x":[44.1488048310083,72.7517247436617,72.7496000281727,72.7538494591507,56.6973745089262,43.1268166808087,43.1225672498307,44.1084352367176,43.1204425343418],"y":[3.38537355568126,2.8432928627894,2.30190393135986,2.30190393135986,2.22880363998342,2.15449068505043,1.7106122013451,1.37338480349834,1.31678326557363],"text":["GO:0002475 (13) <br> antigen processing and presentation via MHC class Ib <br> 4.117e-04","GO:0048006 (5) <br> antigen processing and presentation, endogenous lipid antigen via MHC class Ib <br> 1.435e-03","GO:0048003 (7) <br> antigen processing and presentation of lipid antigen via MHC class Ib <br> 4.990e-03","GO:0048007 (7) <br> antigen processing and presentation, exogenous lipid antigen via MHC class Ib <br> 4.990e-03","GO:0019883 (24) <br> antigen processing and presentation of endogenous antigen <br> 5.905e-03","GO:0001916 (25) <br> positive regulation of T cell mediated cytotoxicity <br> 7.007e-03","GO:0001914 (32) <br> regulation of T cell mediated cytotoxicity <br> 1.947e-02","GO:0002456 (102) <br> T cell mediated immunity <br> 4.233e-02","GO:0001913 (40) <br> T cell mediated cytotoxicity <br> 4.822e-02"],"key":["GO:0002475","GO:0048006","GO:0048003","GO:0048007","GO:0019883","GO:0001916","GO:0001914","GO:0002456","GO:0001913"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(255,153,0,1)","opacity":0.8,"size":[14.619599604825,11.3638858550962,12.6477514351385,12.6477514351385,16.2693778792129,16.3715514622732,16.9725688238675,19.4903644364528,17.4931975318964],"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(255,153,0,1)"}},"hoveron":"points","set":"SharedDataf46ca458","name":"GO:BP","legendgroup":"GO:BP","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","_isNestedKey":false,"frame":null},{"x":[37.3854827130724,37.8827612494041],"y":[1.62347518270005,1.45994880042844],"text":["GO:0097519 (2) <br> DNA recombinase complex <br> 2.380e-02","GO:0098794 (591) <br> postsynapse <br> 3.468e-02"],"key":["GO:0097519","GO:0098794"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(16,150,24,1)","opacity":0.8,"size":[3.77952755905512,22.6771653543307],"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(16,150,24,1)"}},"hoveron":"points","set":"SharedDataf46ca458","name":"GO:CC","legendgroup":"GO:CC","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","_isNestedKey":false,"frame":null},{"x":[12.7345887741418,12.7367135937725,12.7324639545111,23.4351804341929],"y":[3.30871795067252,3.30871795067252,3.00898543358921,2.23602205584905],"text":["GO:0030883 (5) <br> endogenous lipid antigen binding <br> 4.912e-04","GO:0030884 (5) <br> exogenous lipid antigen binding <br> 4.912e-04","GO:0030882 (6) <br> lipid antigen binding <br> 9.795e-04","GO:0071723 (10) <br> lipopeptide binding <br> 5.807e-03"],"key":["GO:0030883","GO:0030884","GO:0030882","GO:0071723"],"type":"scatter","mode":"markers","marker":{"autocolorscale":false,"color":"rgba(220,57,18,1)","opacity":0.8,"size":[11.3638858550962,11.3638858550962,12.0842365914309,13.8312227004971],"symbol":"circle","line":{"width":1.88976377952756,"color":"rgba(220,57,18,1)"}},"hoveron":"points","set":"SharedDataf46ca458","name":"GO:MF","legendgroup":"GO:MF","showlegend":true,"xaxis":"x","yaxis":"y","hoverinfo":"text","_isNestedKey":false,"frame":null},{"x":[2,27.9844192634561],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(220,57,18,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[30.1090651558074,39.5934844192635],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(16,150,24,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[41.7181303116147,106.581444759207],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(255,153,0,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[108.706090651558,109.849150141643],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(221,68,119,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[111.973796033994,117.123937677054],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(51,102,204,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[119.248583569405,142.868271954674],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(85,116,166,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[144.992917847026,150.516997167139],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(34,170,153,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[152.64164305949,153.686968838527],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(102,51,204,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[155.811614730878,162.009206798867],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(102,170,0,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[164.133852691218,196.528328611898],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(153,0,153,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null},{"x":[198.652974504249,200.002124645892],"y":[-1,-1],"text":"","type":"scatter","mode":"lines","line":{"width":11.3385826771654,"color":"rgba(0,153,198,1)","dash":"solid"},"hoveron":"points","showlegend":false,"xaxis":"x","yaxis":"y","hoverinfo":"text","frame":null}],"layout":{"margin":{"t":29.2835201328352,"r":6.6417600664176,"b":55.8781661388202,"l":61.0377750103778},"plot_bgcolor":"rgba(255,255,255,1)","paper_bgcolor":"rgba(255,255,255,1)","font":{"color":"rgba(0,0,0,1)","family":"","size":14.6118721461187},"xaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[0,210],"tickmode":"array","ticktext":["GO:MF","GO:CC","GO:BP","KEGG","REAC","TF","MIRNA","HPA","CORUM","HP","WP"],"tickvals":[14.992209631728,34.8512747875354,74.1497875354108,109.277620396601,114.548866855524,131.05842776204,147.754957507082,153.164305949009,158.910410764873,180.331090651558,199.327549575071],"categoryorder":"array","categoryarray":["GO:MF","GO:CC","GO:BP","KEGG","REAC","TF","MIRNA","HPA","CORUM","HP","WP"],"nticks":null,"ticks":"","tickcolor":null,"ticklen":3.65296803652968,"tickwidth":0,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":10.6268161062682},"tickangle":-45,"showline":true,"linecolor":"rgba(190,190,190,1)","linewidth":0.132835201328352,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"y","title":"","hoverformat":".2f"},"yaxis":{"domain":[0,1],"automargin":true,"type":"linear","autorange":false,"range":[-1,9],"tickmode":"array","ticktext":["0.0","2.5","5.0","7.5"],"tickvals":[0,2.5,5,7.5],"categoryorder":"array","categoryarray":["0.0","2.5","5.0","7.5"],"nticks":null,"ticks":"outside","tickcolor":"rgba(190,190,190,1)","ticklen":3.65296803652968,"tickwidth":0.66417600664176,"showticklabels":true,"tickfont":{"color":"rgba(77,77,77,1)","family":"","size":11.689497716895},"tickangle":-0,"showline":true,"linecolor":"rgba(190,190,190,1)","linewidth":0.66417600664176,"showgrid":false,"gridcolor":null,"gridwidth":0,"zeroline":false,"anchor":"x","title":"","hoverformat":".2f"},"annotations":[{"text":"-log10(p-adj)","x":-0.031059123524877,"y":0.5,"showarrow":false,"ax":0,"ay":0,"font":{"color":"rgba(0,0,0,1)","family":"","size":13.2835201328352},"xref":"paper","yref":"paper","textangle":-90,"xanchor":"right","yanchor":"center","annotationType":"axis"},{"text":"query_1","x":0.5,"y":1,"showarrow":false,"ax":0,"ay":0,"font":{"color":"rgba(169,169,169,1)","family":"","size":13.2835201328352},"xref":"paper","yref":"paper","textangle":-0,"xanchor":"center","yanchor":"bottom"}],"shapes":[{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":1},{"type":"rect","fillcolor":null,"line":{"color":null,"width":0,"linetype":[]},"yref":"paper","xref":"paper","x0":0,"x1":1,"y0":0,"y1":24.9730178497302,"yanchor":1,"ysizemode":"pixel"}],"showlegend":false,"legend":{"bgcolor":"rgba(255,255,255,1)","bordercolor":"transparent","borderwidth":1.88976377952756,"font":{"color":"rgba(0,0,0,1)","family":"","size":11.689497716895}},"hovermode":"closest","barmode":"relative","dragmode":"zoom"},"config":{"doubleClick":"reset","showSendToCloud":false},"source":"A","attrs":{"40241bf72352":{"colour":{},"size":{},"alpha":{},"key":{},"x":{},"y":{},"text":{},"type":"scatter"},"402474e09fa4":{"x":{},"xend":{},"y":{},"yend":{}},"4024d32f592":{"x":{},"xend":{},"y":{},"yend":{}},"40242c31ecb5":{"x":{},"xend":{},"y":{},"yend":{}},"402434b09cb6":{"x":{},"xend":{},"y":{},"yend":{}},"40247ea44d46":{"x":{},"xend":{},"y":{},"yend":{}},"402477bc3100":{"x":{},"xend":{},"y":{},"yend":{}},"40245839a907":{"x":{},"xend":{},"y":{},"yend":{}},"402456060b05":{"x":{},"xend":{},"y":{},"yend":{}},"40243952b4a7":{"x":{},"xend":{},"y":{},"yend":{}},"40245e6641b6":{"x":{},"xend":{},"y":{},"yend":{}},"40245a62c38d":{"x":{},"xend":{},"y":{},"yend":{}}},"cur_data":"40241bf72352","visdat":{"40241bf72352":["function (y) ","x"],"402474e09fa4":["function (y) ","x"],"4024d32f592":["function (y) ","x"],"40242c31ecb5":["function (y) ","x"],"402434b09cb6":["function (y) ","x"],"40247ea44d46":["function (y) ","x"],"402477bc3100":["function (y) ","x"],"40245839a907":["function (y) ","x"],"402456060b05":["function (y) ","x"],"40243952b4a7":["function (y) ","x"],"40245e6641b6":["function (y) ","x"],"40245a62c38d":["function (y) ","x"]},"highlight":{"on":"plotly_click","off":"plotly_doubleclick","persistent":false,"dynamic":false,"color":null,"selectize":false,"defaultValues":null,"opacityDim":0.2,"selected":{"opacity":1},"debounce":0,"ctGroups":["SharedDataf46ca458"]},"shinyEvents":["plotly_hover","plotly_click","plotly_selected","plotly_relayout","plotly_brushed","plotly_brushing","plotly_clickannotation","plotly_doubleclick","plotly_deselect","plotly_afterplot","plotly_sunburstclick"],"base_url":"https://plot.ly"},"evals":[],"jsHooks":[]}</script>
 </div>
 </div>
 </div><!-- /.entry-content -->

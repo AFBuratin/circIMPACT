@@ -27,6 +27,8 @@ library(sparkline)
 library(tidyverse)
 library(RColorBrewer)
 library(purrr)
+library(magrittr)
+library(webshot)
 
 ## -----------------------------------------------------------------------------
 data("circularData")
@@ -65,11 +67,11 @@ dds.filt.expr <- suppressMessages(estimateSizeFactors(dds.filt.expr))
 sf.filt <- sizeFactors(dds.filt.expr)
 circNormDeseq <- counts(dds.filt.expr, normalized = T)
 
-## ----message=FALSE, warning=FALSE---------------------------------------------
+## ----message=FALSE, warning=FALSE, include=TRUE-------------------------------
 
 circtarget <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1.5, 
-                                 method.d = "euclidean", method.c = "ward.D2", k = 2, plot = TRUE)
-
+                                 method.d = "euclidean", method.c = "ward.D2", k = 2)
+print(circtarget$plot)
 
 ## -----------------------------------------------------------------------------
 circMark <- circtarget$circ.targetIDS[1]
@@ -271,20 +273,27 @@ gene_mark <- foreach::foreach(i=1:3, .combine = rbind) %dopar% {
 ## -----------------------------------------------------------------------------
 
 gene_mark <- as.data.table(gene_mark)
+gene_mark %>% dplyr::rename("circTarget" = "markers.circrnas[i]", "Gene" = "gene_id", "logFC" = "log2FoldChange") %>% 
+  arrange(padj) %>% 
+  select(circTarget, Gene, logFC) %>% head(20) %>% 
+  formattable::formattable(., align = c("c","c","c"), list(
+          gene_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
+          circTarget = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
+          logFC = CircTarget::color_tile3(digits = 3, n = 18, fun = "comma", palette = "PiYG")))
 
-gene_mark <- dplyr::rename(gene_mark, "circRNA_markers" = "markers.circrnas[i]")
-
-knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>% 
-dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
-      escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
+gene_mark <- dplyr::rename(gene_mark, "circTarget" = "markers.circrnas[i]", "Gene" = "gene_id")
+ 
+# knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>% 
+# dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
+#       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
 
 
 ## -----------------------------------------------------------------------------
 #subset gene symbol deregulated using the interesting circRNA marker as stratificator
-geneList <- gene_mark$log2FoldChange[gene_mark$circRNA_markers==markers.circrnas[3]]
-names(geneList) <- gene_mark$gene_id[gene_mark$circRNA_markers==markers.circrnas[3]]
+geneList <- gene_mark$log2FoldChange[gene_mark$circTarget==markers.circrnas[3]]
 # order gene list by foldchange
 geneList = sort(geneList, decreasing = TRUE)
+names(geneList) <- gene_mark$Gene[gene_mark$circTarget==markers.circrnas[3]]
 
 library(gprofiler2)
 
