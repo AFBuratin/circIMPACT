@@ -141,13 +141,16 @@ color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
                            display = "block",
                            padding = "0 4px",
                            "border-radius" = "4px",
-                           "color" = ifelse( return_cut(y) %in% c(2, 3, 4, 17, 18, 19),
-                                             csscolor("grey"), csscolor("balck")),
+                           "color" = csscolor("balck"),
                            "background-color" = return_col(y)
                            )
   )
 }
 
+
+#' Define formatter function for plot table 
+#' 
+#'
 color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
   fun=match.fun(fun)
   stopifnot(n >= 5)
@@ -171,6 +174,10 @@ color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
   )
 }
 
+
+#' Define formatter function for plot table 
+#' 
+#'
 stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", digits = 4) {
   fun=match.fun(fun)
   formattable::formatter("span", x ~ fun(x, digits = digits),
@@ -203,6 +210,9 @@ stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", dig
 #   )
 # }
 
+#' Define formatter function for plot table 
+#' 
+#'
 sparkline_hist <- function(x, g){
   data = data.frame(count=x, group=g)
     gg=ggplot(data, aes(x=count, color=group, fill=group)) +
