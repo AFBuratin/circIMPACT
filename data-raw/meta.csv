@@ -1,0 +1,13 @@
+file,sample,gender,condition,tumor_stage,adapter
+/reads/SRR5398213_1.fastq.gz,SRR5398213,female,bladder_cancer_tissue,T3N0M0,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398213_2.fastq.gz,SRR5398213,female,bladder_cancer_tissue,T3N0M0,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398214_1.fastq.gz,SRR5398214,male,bladder_cancer_tissue,T3N0M0,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398214_2.fastq.gz,SRR5398214,male,bladder_cancer_tissue,T3N0M0,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398215_1.fastq.gz,SRR5398215,male,bladder_cancer_tissue,T1_G3_N0M0,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398215_2.fastq.gz,SRR5398215,male,bladder_cancer_tissue,T1_G3_N0M0,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398216_1.fastq.gz,SRR5398216,female,normal_bladder_tissue,,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398216_2.fastq.gz,SRR5398216,female,normal_bladder_tissue,,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398217_1.fastq.gz,SRR5398217,male,normal_bladder_tissue,,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398217_2.fastq.gz,SRR5398217,male,normal_bladder_tissue,,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398218_1.fastq.gz,SRR5398218,male,normal_bladder_tissue,,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
+/reads/SRR5398218_2.fastq.gz,SRR5398218,male,normal_bladder_tissue,,/CirComPara/tools//tools/Trimmomatic-0.38/adapters/TruSeq3-PE.fa
