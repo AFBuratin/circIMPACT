@@ -389,11 +389,12 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
       gather(sample_id, sample_val) %>% dplyr::filter(sample_val>=median(sample_val))
     circ_sample <- merge(circ_sample, colData, by = "sample_id")
   
-    colData <- colData %>% mutate(circKD = if_else(sample_id%in%circ_sample$sample_id, paste0(circ_idofinterest, "_high"), paste0(circ_idofinterest, "_low")))
+    colData <- colData %>% mutate(circKD = if_else(sample%in%circ_sample$sample, paste0(circ_idofinterest, "_high"), 
+                                                   paste0(circ_idofinterest, "_low")))
     
     colData$circKD <- factor(colData$circKD)
     colData$condition <- factor(colData$condition)
-    rownames(colData) <- colData$sample_id
+    rownames(colData) <- colData$sample
     
     ## make deseqdataset for test
     dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
@@ -410,12 +411,12 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
     
     } else {
       colData = colData %>% 
-        mutate(circM = if_else(sample_id%in%group$sample_id[group$group=="g1"], paste0(circ_idofinterest, "g1"), paste0(circ_idofinterest, "g2")))
+        mutate(circM = if_else(sample%in%group$sample[group$group=="g1"], paste0(circ_idofinterest, "g1"), paste0(circ_idofinterest, "g2")))
   
       # colData$circKD <- meta$circKD[match(colData$sample_id, meta$sample_id)]
       colData$circM <- factor(colData$circM)
       colData$condition <- factor(colData$condition)
-      rownames(colData) <- colData$sample_id
+      rownames(colData) <- colData$sample
   
       ## make deseqdataset for test
       dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
