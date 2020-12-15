@@ -50,7 +50,7 @@ data("coldata.df")
 data("dds.circular")
 ## Filter out low circRNA
 data.filt <- circularData[rowSums(circularData >= 5) >= 3,]
-dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample_id[order(coldata.df$condition)]]),
+dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample[order(coldata.df$condition)]]),
                                    colData = coldata.df[order(coldata.df$condition),],
                                    design = ~ condition))
 dds.filt.expr <- suppressMessages(estimateSizeFactors(dds.filt.expr))
@@ -65,8 +65,8 @@ Use `marker.selection` function to find out circRNA-target specifing:
 * method for clustering
 
 ```{r example}
-circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1.5, 
-                                 method.d = "euclidean", method.c = "ward.D2", k = 2)
+circtarget <- CircTarget::marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
+                                 method.d = "euclidean", method.c = "ward.D2", k = 2, median = TRUE)
 
 ```
 
@@ -74,7 +74,7 @@ For instance, you can see the distribution of circRNA-target:
 
 ```{r plotDensity}
   
-circMark <- circtarget$circ.targetIDS[1]
+circMark <- circtarget$circ.targetIDS[5]
 circMark_group.df <- circtarget$group.df[circtarget$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))

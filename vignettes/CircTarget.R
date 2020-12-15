@@ -70,7 +70,7 @@ circNormDeseq <- counts(dds.filt.expr, normalized = T)
 ## ----message=FALSE, warning=FALSE, include=TRUE-------------------------------
 
 circtarget <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
-                                 method.d = "euclidean", method.c = "ward.D2", k = 2)
+                                 method.d = "spearman", method.c = "complete", k = 2, median = TRUE)
 
 ## -----------------------------------------------------------------------------
 circMark <- circtarget$circ.targetIDS[5]
@@ -263,15 +263,15 @@ registerDoParallel(cores=no_cores)
 gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
 
   results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.05, 
+                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
                                        group = circtarget$group.df[circtarget$group.df$circ_id%in%markers.circrnas[i],],
-                                       covariates = "condition"), circTarget = markers.circrnas[i])
+                                       covariates = NULL), circTarget = markers.circrnas[i])
 }
 
 gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.05, 
-                                       group = circtarget$group.df[circtarget$group.df$circ_id%in%markers.circrnas[i],],
-                                       covariates = "condition"), circTarget = "11:33286412-33287511")
+                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
+                                       group = circtarget$group.df[circtarget$group.df$circ_id%in%"11:33286412-33287511",],
+                                       covariates = NULL), circTarget = "11:33286412-33287511")
 
 
 ## -----------------------------------------------------------------------------
