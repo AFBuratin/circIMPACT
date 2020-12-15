@@ -28,9 +28,25 @@ This is a basic example which shows you how to detect circRNA-target:
 
 library(CircTarget)
 library(DESeq2)
-library(ggplot2)
-library(dplyr)
+library(data.table)
 library(plyr)
+library(Rtsne)
+library(ggplot2)
+library(ggrepel)
+library(plotly)
+library(ComplexHeatmap)
+library(circlize)
+library(viridis)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(htmltools)
+library(sparkline)
+library(tidyverse)
+library(RColorBrewer)
+library(purrr)
+library(magrittr)
+library(webshot)
 
 ## load data for example
 data("circularData")
@@ -39,7 +55,7 @@ data("coldata.df")
 data("dds.circular")
 ## Filter out low circRNA
 data.filt <- circularData[rowSums(circularData >= 5) >= 3,]
-dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample_id[order(coldata.df$condition)]]),
+dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample[order(coldata.df$condition)]]),
                                    colData = coldata.df[order(coldata.df$condition),],
                                    design = ~ condition))
 dds.filt.expr <- suppressMessages(estimateSizeFactors(dds.filt.expr))
@@ -53,22 +69,22 @@ calculate distance acrosso items \* method for
 clustering
 
 ``` r
-circtarget <- marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1.5, 
-                                 method.d = "euclidean", method.c = "ward.D2", k = 2)
+circtarget <- CircTarget::marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
+                                 method.d = "euclidean", method.c = "ward.D2", k = 2, median = TRUE)
 #> Loading required package: foreach
+#> 
+#> Attaching package: 'foreach'
+#> The following objects are masked from 'package:purrr':
+#> 
+#>     accumulate, when
 #> Loading required package: iterators
-#> 
-#> Attaching package: 'tidyr'
-#> The following object is masked from 'package:S4Vectors':
-#> 
-#>     expand
 ```
 
 For instance, you can see the distribution of circRNA-target:
 
 ``` r
   
-circMark <- circtarget$circ.targetIDS[1]
+circMark <- circtarget$circ.targetIDS[2]
 circMark_group.df <- circtarget$group.df[circtarget$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
