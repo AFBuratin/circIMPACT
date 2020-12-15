@@ -18,7 +18,8 @@ marker.selection(
   method.c,
   k,
   plot = FALSE,
-  n = 9
+  n = 9,
+  median = TRUE
 )
 }
 \arguments{

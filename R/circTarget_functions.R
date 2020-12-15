@@ -76,19 +76,21 @@ get.color.hues <- function(meta){
 #' 
 #'
 #' @export
-marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k){
+marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, median=TRUE){
   
-  # if(median(circ.m)==0){
-  #   group <- ifelse(circ.m<mean(circ.m), "DW", "UP")
-  # } else {
-  #   group <- ifelse(circ.m<median(circ.m), "DW", "UP")
-  # }
-  
-  dist_mat <- dist(as.data.frame(scale(circ.m)), method = method.d)
+  if(median){
+  if(median(circ.m)==0){
+    group <- ifelse(circ.m<mean(circ.m), "g1", "g2")
+  } else {
+    group <- ifelse(circ.m<median(circ.m), "g1", "g2")
+  }
+} else{
+  dist_mat <- dist(as.data.frame(scale(circ.m)), method = "minkowski")
   hclust_avg <- hclust(dist_mat, method = method.c)
   # kmeans <- kmeans(dist_mat, k, iter.max = 10, nstart = 1)
   cut_avg <- cutree(hclust_avg, k = k)
   group <- ifelse(cut_avg==1, "g1", "g2")
+}
   # group <- ifelse(kmeans$cluster==1, "g1", "g2")
   colData(dds)$group <- as.factor(group)
   design(dds) <- ~group
@@ -110,6 +112,7 @@ marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k){
 #' Define formatter function for plot table 
 #' 
 #' 
+#' @export
 color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
   fun=match.fun(fun)
   stopifnot(n >= 5)
@@ -151,13 +154,18 @@ color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
 #' Define formatter function for plot table 
 #' 
 #'
+#' @export
 color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
   fun=match.fun(fun)
   stopifnot(n >= 5)
   
-  return_cut <- function(y) 
-    cut(y, breaks = quantile(y, probs = 0:n/n, na.rm = T),
-        labels = 1:n, ordered_result = T, include.lowest = T)
+  return_cut <- function(y) {
+    c = cut(y, breaks = unique(quantile(y, probs = 0:n/n, na.rm = T)), 
+        ordered_result = T, include.lowest = T)
+    c.lab <- factor(c, levels = levels(c), labels = 1:(length(levels(c))))
+    c.lab
+  }
+    
   
   return_col <- function(y) 
     RColorBrewer::brewer.pal(n, palette)[as.integer(return_cut(y))]
@@ -178,6 +186,7 @@ color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
 #' Define formatter function for plot table 
 #' 
 #'
+#' @export
 stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", digits = 4) {
   fun=match.fun(fun)
   formattable::formatter("span", x ~ fun(x, digits = digits),
@@ -213,6 +222,7 @@ stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", dig
 #' Define formatter function for plot table 
 #' 
 #'
+#' @export
 sparkline_hist <- function(x, g){
   data = data.frame(count=x, group=g)
     gg=ggplot(data, aes(x=count, color=group, fill=group)) +
@@ -276,7 +286,7 @@ export_formattable <- function(f, file, width = "100%", height = "100%",
 #' 
 #'
 #' @export
-marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, method.c, k, plot=FALSE, n=9){
+marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, method.c, k, plot=FALSE, n=9, median=TRUE){
   library(doParallel)
   library(dplyr)
   library(tidyr)
@@ -289,7 +299,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
   #make a for loop to estimate log2FC and p.adj to select marker circRNAs
   results.temp <- marker.detection(circ_id = circ_id, circ.m = dat[circ_id,], dds = dds[circ_id,], 
                                    sf = sf, method.d = method.d, 
-                                   method.c = method.c, k = k)
+                                   method.c = method.c, k = k, median = median)
   
   }
 
@@ -319,14 +329,14 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
   
   markers.circrnas = unique(circ_mark_selection$circ_id)
   
-    tab_merge <- circ_mark_selection %>%
-      dplyr::select(circ_id, log2FoldChange, padj, group, count)
+  tab_merge <- circ_mark_selection %>%
+    dplyr::select(circ_id, log2FoldChange, padj, group, count)
 
-    tab_merge$Marker <- "FALSE"
-    tab_merge$Marker[tab_merge$padj<=0.1] <- "TRUE"
-    tab_merge$count <- as.numeric(tab_merge$count)
+  tab_merge$Marker <- "FALSE"
+  tab_merge$Marker[tab_merge$padj<=0.1] <- "TRUE"
+  tab_merge$count <- as.numeric(tab_merge$count)
     
-    tab_plot = tab_merge %>% 
+  tab_plot = tab_merge %>% 
       # tidyr::spread(group, count) %>% 
       dplyr::group_by(circ_id) %>% 
       dplyr::summarise(
@@ -345,13 +355,13 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
         # )
         ) %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
           circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          logFC = color_tile3(digits = 3, n = 18, fun = "comma", palette = "PiYG"),
-          p.adj = stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
+          logFC = CircTarget::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
+          p.adj = CircTarget::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
           Marker = formattable::formatter("span", 
                              style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
                              x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
-          mean.G1 = color_tile4(digits = 3, fun = "comma"),
-          mean.G2 = color_tile4(digits = 3, fun = "comma")))
+          mean.G1 = CircTarget::color_tile4(digits = 3, fun = "comma"),
+          mean.G2 = CircTarget::color_tile4(digits = 3, fun = "comma")))
     
     # export_formattable(tab_plot, file = "formattble_table.png")
     print(tab_plot)
@@ -433,3 +443,4 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
       }
   return(as.data.frame(cbind(res.dt, n.degs)))
 }
+
