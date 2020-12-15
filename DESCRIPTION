@@ -1,7 +1,7 @@
 Package: CircTarget
 Type: Package
 Title: Pipeline for study interaction and association between circular and linear RNA
-Version: 0.1.1
+Version: 0.1.3
 Authors@R: person ("Alessia", "Buratin", email="alessia.buratin@studenti.unipd.it", 
       role = c("aut","cre"))
 Description: Detect the molecular pathways associated with the expression levels of 
@@ -12,8 +12,8 @@ License: GPL-2
 Encoding: UTF-8
 LazyData: FALSE
 Suggests:
-    knitr, rmarkdown, DESEq2, data.table, plyr, Rtsne, ggplot2, ggrepel, ComplexHeatmap, circlize, viridis, 
-    kableExtra, formattable, sparkline, htmltools, magrittr, webshot
+    knitr, rmarkdown, DESeq2, data.table, plyr, Rtsne, ggplot2, ggrepel, ComplexHeatmap, circlize, viridis, 
+    kableExtra, sparkline, magrittr
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
 Depends: 

@@ -39,9 +39,25 @@ This is a basic example which shows you how to detect circRNA-target:
 
 library(CircTarget)
 library(DESeq2)
-library(ggplot2)
-library(dplyr)
+library(data.table)
 library(plyr)
+library(Rtsne)
+library(ggplot2)
+library(ggrepel)
+library(plotly)
+library(ComplexHeatmap)
+library(circlize)
+library(viridis)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(htmltools)
+library(sparkline)
+library(tidyverse)
+library(RColorBrewer)
+library(purrr)
+library(magrittr)
+library(webshot)
 
 ## load data for example
 data("circularData")
@@ -74,7 +90,7 @@ For instance, you can see the distribution of circRNA-target:
 
 ```{r plotDensity}
   
-circMark <- circtarget$circ.targetIDS[5]
+circMark <- circtarget$circ.targetIDS[2]
 circMark_group.df <- circtarget$group.df[circtarget$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))

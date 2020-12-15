@@ -114,7 +114,8 @@ marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, me
 #' 
 #' @export
 color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
-  fun=match.fun(fun)
+  library(formattable)
+  fun=match.fun(FUN = fun, descend = FALSE)
   stopifnot(n >= 5)
   
   Thresh = 0
@@ -156,14 +157,15 @@ color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
 #'
 #' @export
 color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
-  fun=match.fun(fun)
+  library(formattable)
+  fun=match.fun(FUN = fun, descend = FALSE)
   stopifnot(n >= 5)
   
-  return_cut <- function(y) {
+  return_cut = function(y) {
     c = cut(y, breaks = unique(quantile(y, probs = 0:n/n, na.rm = T)), 
         ordered_result = T, include.lowest = T)
     c.lab <- factor(c, levels = levels(c), labels = 1:(length(levels(c))))
-    c.lab
+    return(c.lab)
   }
     
   
@@ -188,7 +190,8 @@ color_tile4 <- function(fun = "comma", digits = 0, palette = 'YlGnBu', n = 9) {
 #'
 #' @export
 stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", digits = 4) {
-  fun=match.fun(fun)
+  library(formattable)
+  fun=match.fun(fun, descend = FALSE)
   formattable::formatter("span", x ~ fun(x, digits = digits),
                          style = function(y) formattable::style(              
                            display = "block",              
