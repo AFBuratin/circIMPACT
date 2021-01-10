@@ -47,7 +47,7 @@ CircTarget package version: `r packageVersion("CircTarget")`
 
 *CircTarget* provides an R interface to analyze a possible impact of circRNA expression profile in gene expression.
 
-The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low CircTarget expression with those with high expression. 
+The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNAs expression with those with high expression. 
 
 The main tools in *CircTarget* are:
 
