@@ -1,4 +1,4 @@
-Package: CircTarget
+Package: CIGAP
 Type: Package
 Title: Pipeline for study interaction and association between circular and linear RNA
 Version: 0.1.3

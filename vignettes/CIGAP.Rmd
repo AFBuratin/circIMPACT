@@ -1,5 +1,5 @@
 ---
-title: "The CircTarget package - exploring molecular pathways by linking circular RNA to TARGET genes"
+title: "The CIGAP package - exploring molecular pathways by linking circular RNA to TARGET genes"
 author: 
   - name: Alessia Buratin
     affiliation: Departement of Biology, Department of Molecular Medicine, University of Padova
@@ -11,7 +11,7 @@ output:
 bibliography: library.bib
 link-citations: yes
 vignette: >
-  %\VignetteIndexEntry{CircTarget}
+  %\VignetteIndexEntry{CIGAP}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -42,14 +42,14 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-*CircTarget* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *CircTarget* package offers a tidy pipeline, starting from the provided circRNA-Target which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the Target circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *CircTarget* stands for "circRNA-Target".
-CircTarget package version: `r packageVersion("CircTarget")`
+*CIGAP* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *CIGAP* package offers a tidy pipeline, starting from the provided circRNA-Target which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the Target circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *CIGAP* stands for "circRNA-Target".
+CIGAP package version: `r packageVersion("CIGAP")`
 
-*CircTarget* provides an R interface to analyze a possible impact of circRNA expression profile in gene expression.
+*CIGAP* provides an R interface to analyze a possible impact of circRNA expression profile in gene expression.
 
-The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low CircTarget expression with those with high expression. 
+The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low CIGAP expression with those with high expression. 
 
-The main tools in *CircTarget* are:
+The main tools in *CIGAP* are:
 
 * `marker.detection` - detection of circRNAs that can stratified samples by their expression signifincantly
 * `geneexpression` - DEG analysis for each circRNA-markers defined by K-means algorithm or by circRNA expression (high vs low)
@@ -61,11 +61,11 @@ The input for any of the tools consist in count matrices: from the same samples 
 ## Installation and loading
 
 ```{r eval = FALSE}
-devtools::install_github("ABuratin/CircTarget")
+devtools::install_github("ABuratin/CIGAP")
 ```
 
 ```{r setup, warning = FALSE, message = FALSE}
-library(CircTarget)
+library(CIGAP)
 library(DESeq2)
 library(data.table)
 library(plyr)
@@ -103,7 +103,7 @@ intgroup.dt <- meta[, .(.N), by = .(sample,
 samples.per.condition <- data.frame(intgroup.dt[, .N, by = .(condition)], row.names = "condition")
   
 n.conditions <- nrow(samples.per.condition)
-hues <- CircTarget::gg_color_hue(n.conditions)
+hues <- CIGAP::gg_color_hue(n.conditions)
 for(i in 1:n.conditions){
       n.hues <- samples.per.condition[i, "N"] + 2
       col.hues <- colorRampPalette(colors = c(hues[i], 
@@ -140,7 +140,7 @@ To establish a possible impact of circRNA in gene expression using different mol
 
 ```{r message=FALSE, warning=FALSE, include=TRUE}
 
-circtarget <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
+CIGAP <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
                                  method.d = "spearman", method.c = "complete", k = 2, median = TRUE)
 ```
 
@@ -149,13 +149,13 @@ The result `list` will include:
 * circ.markers - a data frame with DESeq estimates for each circRNAs.  
 * circ.targets - a vector of circRNAs defined as possible targets.
 * group.df - data.frame with a variable group that indicate the new stratification of samples by circRNAs expression.
-* plot - formatted table with info. about circTarget expression
+* plot - formatted table with info. about CIGAP expression
 
 ### Density expression of circRNA-markers
 
 ```{r}
-circMark <- circtarget$circ.targetIDS[5]
-circMark_group.df <- circtarget$group.df[circtarget$group.df$circ_id==circMark,]
+circMark <- CIGAP$circ.targetIDS[5]
+circMark_group.df <- CIGAP$group.df[CIGAP$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
 
@@ -183,7 +183,7 @@ Clustering analysis is performed using the previuos selected circRNA, defined as
 T-SNE algorithm is used to performe dimensionality reduction and k-means and hierarchical clustering methods are compared in order to identify two cluster of samples. 
 
 ```{r message=FALSE}
-markers.circrnas <- circtarget$circ.targetIDS
+markers.circrnas <- CIGAP$circ.targetIDS
 mat.filt.mark <- circularData[markers.circrnas, ]
 
 dds.filt.mark <- DESeqDataSetFromMatrix(countData = ceiling(mat.filt.mark[,coldata.df$sample]),
@@ -341,7 +341,7 @@ draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
 ```
 
 
-## Gene list functional enrichment analysis with *CircTargets*
+## Gene list functional enrichment analysis with *CIGAPs*
 
 ### Gene expression analysis - Table results
 
@@ -369,14 +369,14 @@ gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
 
   results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
-                                       group = circtarget$group.df[circtarget$group.df$circ_id%in%markers.circrnas[i],],
-                                       covariates = NULL), circTarget = markers.circrnas[i])
+                                       group = CIGAP$group.df[CIGAP$group.df$circ_id%in%markers.circrnas[i],],
+                                       covariates = NULL), CIGAP = markers.circrnas[i])
 }
 
 gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
-                                       group = circtarget$group.df[circtarget$group.df$circ_id%in%"11:33286412-33287511",],
-                                       covariates = NULL), circTarget = "11:33286412-33287511")
+                                       group = CIGAP$group.df[CIGAP$group.df$circ_id%in%"11:33286412-33287511",],
+                                       covariates = NULL), CIGAP = "11:33286412-33287511")
 
 ```
 
@@ -386,28 +386,28 @@ gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33
 gene_mark <- as.data.table(gene_mark_hipk3)
 gene_mark %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>% 
   arrange(padj) %>% 
-  select(circTarget, Gene, logFC) %>% head(20) %>% 
+  select(CIGAP, Gene, logFC) %>% head(20) %>% 
   formattable::formattable(., align = c("c","c","c"), list(
           gene_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          circTarget = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          logFC = CircTarget::color_tile3(digits = 3, n = 18, fun = "comma", palette = "PiYG")))
+          CIGAP = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
+          logFC = CIGAP::color_tile3(digits = 3, n = 18, fun = "comma", palette = "PiYG")))
 
 # knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>% 
 # dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
 #       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
-
+gene_mark[gene_mark$gene_id=="HPSE",]
 ```
 
 ### Enrichment analysis
 
 ```{r}
 #subset gene symbol deregulated using the interesting circRNA marker as stratificator
-geneList <- gene_mark$log2FoldChange[gene_mark$circTarget==markers.circrnas[5]]
+geneList <- gene_mark$log2FoldChange[gene_mark$CIGAP==markers.circrnas[5]]
 geneList <- gene_mark_hipk3$log2FoldChange
 
 # order gene list by foldchange
 geneList = sort(geneList, decreasing = TRUE)
-names(geneList) <- gene_mark$Gene[gene_mark$circTarget==markers.circrnas[5]]
+names(geneList) <- gene_mark$Gene[gene_mark$CIGAP==markers.circrnas[5]]
 names(geneList) <- gene_mark_hipk3$gene_id
 
 library(gprofiler2)
@@ -419,6 +419,7 @@ gostres2 <- gost(query = names(geneList)[names(geneList)!="."],
                  user_threshold = 0.05, correction_method = "g_SCS", 
                  domain_scope = "annotated", custom_bg = NULL, 
                  numeric_ns = "", sources = NULL)
+
 p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
 p
 ```
