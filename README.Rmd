@@ -25,7 +25,7 @@ The goal of circIMPACT is to detect the molecular pathways associated with the e
 
 ## Installation
 
-You can install the development version from [GitHub](https://github.com/ABuratin/circIMPACT) with:
+You can install the development version from [GitHub](https://github.com/AFBuratin/circIMPACT) with:
 
 ``` r
 # install.packages("devtools")

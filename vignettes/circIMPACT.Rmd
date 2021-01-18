@@ -65,7 +65,7 @@ The input for any of the tools consist in count matrices: from the same samples 
 ## Installation and loading
 
 ```{r eval = FALSE}
-devtools::install_github("ABuratin/circIMPACT")
+devtools::install_github("AFBuratin/circIMPACT")
 ```
 
 ```{r setup, warning = FALSE, message = FALSE}
