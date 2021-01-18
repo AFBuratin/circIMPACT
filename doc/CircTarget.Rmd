@@ -1,15 +1,15 @@
 ---
-title: "CircTarget"
+title: "circIMPACT"
 author: "Alessia Buratin"
 date: "`r format(Sys.Date(), '%m/%d/%Y')`"
 output: rmarkdown::html_vignette
 abstract: |
-  *circTarget* provides empirical Bayes shrinkage estimators for effect sizes for a
+  *circIMPACT* provides empirical Bayes shrinkage estimators for effect sizes for a
   variety of GLM models; *apeglm* stands for "Approximate Posterior
   Estimation for GLM".
-  CircTarget package version: `r packageVersion("CircTarget")`
+  circIMPACT package version: `r packageVersion("circIMPACT")`
 vignette: >
-  %\VignetteIndexEntry{CircTarget}
+  %\VignetteIndexEntry{circIMPACT}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
