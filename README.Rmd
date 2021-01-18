@@ -29,7 +29,7 @@ You can install the development version from [GitHub](https://github.com/AFBurat
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("ABuratin/circIMPACT")
+devtools::install_github("AFBuratin/circIMPACT")
 ```
 ## Example
 

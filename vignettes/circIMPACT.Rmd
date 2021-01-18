@@ -51,7 +51,6 @@ circIMPACT package version: `r packageVersion("circIMPACT")`
 The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circIMPACT expression with those with high expression. 
 =======
 The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNAs expression with those with high expression. 
->>>>>>> 3221c6d136097ead88cbc03c83b9c2e308beda42:vignettes/CircTarget.Rmd
 
 The main tools in *circIMPACT* are:
 
