@@ -1,14 +1,75 @@
-## ---- include = FALSE---------------------------------------------------------
+---
+title: "The circIMPACT package - exploring molecular pathways by linking circular RNA to genes and pathways"
+author: 
+  - name: Alessia Buratin
+    affiliation: Departement of Biology, Department of Molecular Medicine, University of Padova
+date: "`r format(Sys.Date(), '%d-%m-%Y')`"    
+output:
+  prettydoc::html_pretty:
+    theme: hpstr  
+    highlight: github
+bibliography: library.bib
+link-citations: yes
+vignette: >
+  %\VignetteIndexEntry{circIMPACT}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+```
 
-## ----eval = FALSE-------------------------------------------------------------
-#  devtools::install_github("ABuratin/CIGAP")
+<style>
+    body {
+        max-width: 1500px;
+        text-align: justify
+    }
+    .page-header {
+      background-image: none;
+      background-color: #ff7600;
+    }
+    .main-content h2 {
+      color: #ff7600;
+    }
+</style>
 
-## ----setup, warning = FALSE, message = FALSE----------------------------------
-library(CIGAP)
+
+## Overview
+
+*circIMPACT* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *circIMPACT* package offers a tidy pipeline, starting from the provided circRNA-Target which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the Target circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *circIMPACT* stands for "circRNA-Target".
+circIMPACT package version: `r packageVersion("circIMPACT")`
+
+*circIMPACT* provides an R interface to analyze a possible impact of circRNA expression profile in gene expression.
+
+<<<<<<< HEAD:vignettes/circIMPACT.Rmd
+The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circIMPACT expression with those with high expression. 
+=======
+The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNAs expression with those with high expression. 
+>>>>>>> 3221c6d136097ead88cbc03c83b9c2e308beda42:vignettes/CircTarget.Rmd
+
+The main tools in *circIMPACT* are:
+
+* `marker.detection` - detection of circRNAs that can stratified samples by their expression signifincantly
+* `geneexpression` - DEG analysis for each circRNA-markers defined by K-means algorithm or by circRNA expression (high vs low)
+
+The input for any of the tools consist in count matrices: from the same samples we need the quantification of circular and linear RNA.
+
+----
+
+## Installation and loading
+
+```{r eval = FALSE}
+devtools::install_github("ABuratin/circIMPACT")
+```
+
+```{r setup, warning = FALSE, message = FALSE}
+library(circIMPACT)
 library(DESeq2)
 library(data.table)
 library(plyr)
@@ -29,8 +90,12 @@ library(RColorBrewer)
 library(purrr)
 library(magrittr)
 library(webshot)
+```
+----
 
-## -----------------------------------------------------------------------------
+### Input data
+
+```{r}
 data("circularData")
 data("count.matrix")
 data("meta")
@@ -42,7 +107,7 @@ intgroup.dt <- meta[, .(.N), by = .(sample,
 samples.per.condition <- data.frame(intgroup.dt[, .N, by = .(condition)], row.names = "condition")
   
 n.conditions <- nrow(samples.per.condition)
-hues <- CIGAP::gg_color_hue(n.conditions)
+hues <- circIMPACT::gg_color_hue(n.conditions)
 for(i in 1:n.conditions){
       n.hues <- samples.per.condition[i, "N"] + 2
       col.hues <- colorRampPalette(colors = c(hues[i], 
@@ -57,8 +122,11 @@ dds.circular <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(circ
                                    design = ~ condition))
 dds.circular <- suppressMessages(estimateSizeFactors(dds.circular))
 sf <- sizeFactors(dds.circular)
+```
 
-## -----------------------------------------------------------------------------
+At first a simply filter of low count is applied to remove background noise.
+
+```{r}
 data.filt <- circularData[rowSums(circularData >= 5) >= 2,]
 dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample[order(coldata.df$condition)]]),
                                    colData = coldata.df[order(coldata.df$condition),],
@@ -66,15 +134,32 @@ dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(dat
 dds.filt.expr <- suppressMessages(estimateSizeFactors(dds.filt.expr))
 sf.filt <- sizeFactors(dds.filt.expr)
 circNormDeseq <- counts(dds.filt.expr, normalized = T)
+```
 
-## ----message=FALSE, warning=FALSE, include=TRUE-------------------------------
+## Selection of circRNA-markers with `marker.detection`
 
-CIGAP <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
+### CircRNA-markers
+
+To establish a possible impact of circRNA in gene expression using different molecular subtypes of human T-ALL we select a subset of circRNA defined as markers: at first by using k-means algorithm we separate samples in two main cluster defined by the circRNA expression, then only circRNA which DESeq adj. p-value<.1 and log fold-change>1.5 have been selected.
+
+```{r message=FALSE, warning=FALSE, include=TRUE}
+
+circIMPACT <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
                                  method.d = "spearman", method.c = "complete", k = 2, median = TRUE)
+```
 
-## -----------------------------------------------------------------------------
-circMark <- CIGAP$circ.targetIDS[5]
-circMark_group.df <- CIGAP$group.df[CIGAP$group.df$circ_id==circMark,]
+The result `list` will include:
+
+* circ.markers - a data frame with DESeq estimates for each circRNAs.  
+* circ.targets - a vector of circRNAs defined as possible targets.
+* group.df - data.frame with a variable group that indicate the new stratification of samples by circRNAs expression.
+* plot - formatted table with info. about circIMPACT expression
+
+### Density expression of circRNA-markers
+
+```{r}
+circMark <- circIMPACT$circ.targetIDS[5]
+circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
 
@@ -93,9 +178,16 @@ p <- ggplot(circMark_group.df, aes(x=counts, color=group, fill=group)) +
   theme_classic()
 p
 
+```
 
-## ----message=FALSE------------------------------------------------------------
-markers.circrnas <- CIGAP$circ.targetIDS
+
+### Clustering analysis using CircRNA-markers
+
+Clustering analysis is performed using the previuos selected circRNA, defined as circRNA-markers. 
+T-SNE algorithm is used to performe dimensionality reduction and k-means and hierarchical clustering methods are compared in order to identify two cluster of samples. 
+
+```{r message=FALSE}
+markers.circrnas <- circIMPACT$circ.targetIDS
 mat.filt.mark <- circularData[markers.circrnas, ]
 
 dds.filt.mark <- DESeqDataSetFromMatrix(countData = ceiling(mat.filt.mark[,coldata.df$sample]),
@@ -103,12 +195,14 @@ dds.filt.mark <- DESeqDataSetFromMatrix(countData = ceiling(mat.filt.mark[,colda
                                    design = ~ 1)
 dds.filt.vst <- varianceStabilizingTransformation(dds.filt.mark, fitType = "local", blind = F)
 norm.counts.filt <- assay(dds.filt.vst)
+```
 
-## -----------------------------------------------------------------------------
+```{r }
 dt <- norm.counts.filt
 
+```
 
-## -----------------------------------------------------------------------------
+```{r}
 ## Rtsne function may take some minutes to complete...
 set.seed(9)
 mydist <- dist(t(norm.counts.filt))
@@ -120,8 +214,9 @@ tsne_data <- Rtsne(mydist, pca = F, perplexity=1, max_iter=5000)
 d_tsne_1 = as.data.frame(tsne_data$Y)
 rownames(d_tsne_1) <- colnames(norm.counts.filt)
 
+```
 
-## ----clustering, fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."----
+```{r clustering, fig.cap = "t-SNE dimensionality reduction representation. K-means and hierarchical clustering are compared."}
 
 ## keeping original data
 d_tsne_1_original=d_tsne_1
@@ -164,8 +259,10 @@ plot_h=plot_cluster(d_tsne_1_original, "cl_hierarchical", "Set1")
 library(gridExtra)
 grid.arrange(plot_k, plot_h,  ncol=2)
 
+```
 
-## -----------------------------------------------------------------------------
+
+```{r}
 pca <- prcomp(x = t(norm.counts.filt), center = T)
 d <- data.frame(pca$x[rownames(coldata.df), c("PC1", "PC2")], coldata.df)
 PC1.var <- summary(pca)$importance["Proportion of Variance", 1]
@@ -193,8 +290,11 @@ ggpubr::ggarrange(ggarrange(g1, g3,
                             ncol = 2, 
                             labels = c("A", "B")),
                   nrow = 1)  
+```
 
-## -----------------------------------------------------------------------------
+### Heatmap using CircRNA-markers
+
+```{r }
 
 set.seed(201)
 dds.filt.mark <- estimateSizeFactors(dds.filt.mark)
@@ -242,16 +342,25 @@ Heatmap(base_mean, name = "log2(base mean)", show_row_names = F, width = unit(2,
 
 draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
 
+```
 
-## ----Filterlinear_data--------------------------------------------------------
+
+## Gene list functional enrichment analysis with *circIMPACTs*
+
+### Gene expression analysis - Table results
+
+Because of these analysis is highly time consuming for this tutorial have been reported the DEGs for only the first 3 circRNA-markers.
+
+```{r Filterlinear_data}
 ## filter out genes low expressed 
 min.count <- 20
 min.col <- 5
 
 filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
 
+```
 
-## ----message=FALSE, warning=FALSE---------------------------------------------
+```{r message=FALSE, warning=FALSE}
 #normalized circRNAs data 
 circNormDeseq <- counts(dds.filt.expr, normalized = T) %>% as.data.frame()
 circNormDeseq$circ_id <- rownames(circNormDeseq)
@@ -264,40 +373,45 @@ gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
 
   results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
-                                       group = CIGAP$group.df[CIGAP$group.df$circ_id%in%markers.circrnas[i],],
-                                       covariates = NULL), CIGAP = markers.circrnas[i])
+                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
+                                       covariates = NULL), circIMPACT = markers.circrnas[i])
 }
 
 gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
-                                       group = CIGAP$group.df[CIGAP$group.df$circ_id%in%"11:33286412-33287511",],
-                                       covariates = NULL), CIGAP = "11:33286412-33287511")
+                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%"11:33286412-33287511",],
+                                       covariates = NULL), circIMPACT = "11:33286412-33287511")
+
+```
 
 
-## -----------------------------------------------------------------------------
+```{r}
 
 gene_mark <- as.data.table(gene_mark_hipk3)
 gene_mark %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>% 
   arrange(padj) %>% 
-  select(CIGAP, Gene, logFC) %>% head(20) %>% 
+  select(circIMPACT, Gene, logFC) %>% head(20) %>% 
   formattable::formattable(., align = c("c","c","c"), list(
           gene_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          CIGAP = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          logFC = CIGAP::color_tile3(digits = 3, n = 18, fun = "comma", palette = "PiYG")))
+          circIMPACT = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
+          logFC = circIMPACT::color_tile3(digits = 3, n = 18, fun = "comma", palette = "PiYG")))
 
 # knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>% 
 # dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
 #       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
 gene_mark[gene_mark$gene_id=="HPSE",]
+```
 
-## -----------------------------------------------------------------------------
+### Enrichment analysis
+
+```{r}
 #subset gene symbol deregulated using the interesting circRNA marker as stratificator
-geneList <- gene_mark$log2FoldChange[gene_mark$CIGAP==markers.circrnas[5]]
+geneList <- gene_mark$log2FoldChange[gene_mark$circIMPACT==markers.circrnas[5]]
 geneList <- gene_mark_hipk3$log2FoldChange
 
 # order gene list by foldchange
 geneList = sort(geneList, decreasing = TRUE)
-names(geneList) <- gene_mark$Gene[gene_mark$CIGAP==markers.circrnas[5]]
+names(geneList) <- gene_mark$Gene[gene_mark$circIMPACT==markers.circrnas[5]]
 names(geneList) <- gene_mark_hipk3$gene_id
 
 library(gprofiler2)
@@ -312,4 +426,5 @@ gostres2 <- gost(query = names(geneList)[names(geneList)!="."],
 
 p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
 p
+```
 
