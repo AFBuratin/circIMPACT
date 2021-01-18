@@ -1,23 +1,23 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# CIGAP
+# circIMPACT
 
 <!-- badges: start -->
 
 <!-- badges: end -->
 
-The goal of CIGAP is to detect the molecular pathways associated with
-the expression levels of the target circRNAs.
+The goal of circIMPACT is to detect the molecular pathways associated
+with the expression levels of the target circRNAs.
 
 ## Installation
 
 You can install the development version from
-[GitHub](https://github.com/ABuratin/CIGAP) with:
+[GitHub](https://github.com/AFBuratin/circIMPACT) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("ABuratin/CIGAP")
+devtools::install_github("AFBuratin/circIMPACT")
 ```
 
 ## Example
@@ -26,7 +26,7 @@ This is a basic example which shows you how to detect circRNA-target:
 
 ``` r
 
-library(CIGAP)
+library(circIMPACT)
 library(DESeq2)
 library(data.table)
 library(plyr)
@@ -69,7 +69,7 @@ calculate distance acrosso items \* method for
 clustering
 
 ``` r
-CIGAP <- CIGAP::marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
+circIMPACT <- circIMPACT::marker.selection(dat = data.filt, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
                                  method.d = "euclidean", method.c = "ward.D2", k = 2, median = TRUE)
 #> Loading required package: foreach
 #> 
@@ -84,8 +84,8 @@ For instance, you can see the distribution of circRNA-target:
 
 ``` r
   
-circMark <- CIGAP$circ.targetIDS[2]
-circMark_group.df <- CIGAP$group.df[CIGAP$group.df$circ_id==circMark,]
+circMark <- circIMPACT$circ.targetIDS[2]
+circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
 
