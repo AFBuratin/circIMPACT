@@ -42,13 +42,13 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-*circIMPACT* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *circIMPACT* package offers a tidy pipeline, starting from the provided circRNA-Target which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the Target circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *circIMPACT* stands for "circRNA-Target".
+*circIMPACT* provides a strategy to analyze circular and linear transcriptome rely on data mining and statistical learning techniques. *circIMPACT* package offers a tidy pipeline, starting from the provided circRNA which expression classifies samples with high and low expression of it, a comprensive transcriptome and molecular pathway analysis are performed, including visualisation, normalization, classification, clustering, Differential Expression Analysis and Gene Set Enrichment Analysis. The package accepts data presented as a matrix of raw counts and allows the inclusion of variables that occur with the experimental setting. A series of functions enables data cleaning by filtering rows, data adjustment by identify and removing the unwonted source of variation and to select the best predictors for modeling the responce variable. A learning technique is applied to build a robust classification model, and also an unsupervised analysis is carried out to gain mechanistic insights and detect the molecular pathway associated with the expression levels of the selected circRNA. Finally, a Differential Expression Analysis identyfied deregulated mRNAs and a GSEA is performed for them. *circIMPACT* stands for "circRNA impacted genes and pathways".
 circIMPACT package version: `r packageVersion("circIMPACT")`
 
 *circIMPACT* provides an R interface to analyze a possible impact of circRNA expression profile in gene expression.
 
 <<<<<<< HEAD:vignettes/circIMPACT.Rmd
-The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circIMPACT expression with those with high expression. 
+The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNA expression with those with high expression. 
 =======
 The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNAs expression with those with high expression. 
 
@@ -57,7 +57,7 @@ The main tools in *circIMPACT* are:
 * `marker.detection` - detection of circRNAs that can stratified samples by their expression signifincantly
 * `geneexpression` - DEG analysis for each circRNA-markers defined by K-means algorithm or by circRNA expression (high vs low)
 
-The input for any of the tools consist in count matrices: from the same samples we need the quantification of circular and linear RNA.
+The input for any of the tools consist in count matrices: from the same samples we need the quantification of circular and linear RNAs.
 
 ----
 
@@ -344,11 +344,11 @@ draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
 ```
 
 
-## Gene list functional enrichment analysis with *circIMPACTs*
+## Gene expression analysis with *circIMPACTs*
 
-### Gene expression analysis - Table results
+### DEGs
 
-Because of these analysis is highly time consuming for this tutorial have been reported the DEGs for only the first 3 circRNA-markers.
+Because of these analysis is highly time consuming for this tutorial have been reported the DEGs for only the circHIPK3.
 
 ```{r Filterlinear_data}
 ## filter out genes low expressed 
@@ -368,13 +368,13 @@ library(doParallel)
 no_cores <- detectCores() - 1  
 registerDoParallel(cores=no_cores)  
 
-gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
-
-  results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
-                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
-                                       covariates = NULL), circIMPACT = markers.circrnas[i])
-}
+# gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
+# 
+#   results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
+#                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
+#                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
+#                                        covariates = NULL), circIMPACT = markers.circrnas[i])
+# }
 
 gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
@@ -383,6 +383,7 @@ gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33
 
 ```
 
+### Classification
 
 ```{r}
 
@@ -399,6 +400,60 @@ gene_mark %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>%
 # dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
 #       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
 gene_mark[gene_mark$gene_id=="HPSE",]
+```
+
+
+```{r}
+library(doParallel)
+no_cores <- detectCores() - 1  
+registerDoParallel(cores=no_cores)  
+
+gene_class <- foreach::foreach(i=1:5, .combine = list) %dopar% {
+
+  results.temp <- gene_class(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
+                                       linearRNAs = filt.mat, colData = coldata.df, 
+                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
+                                       covariates = NULL, th.corr = 0.5)
+}
+
+gene_class_hipk3 <- gene_class(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
+                                       linearRNAs = filt.mat, colData = coldata.df, 
+                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%"11:33286412-33287511",],
+                                       covariates = NULL, th.corr = 0.5)
+```
+
+```{r}
+VI <- importance(gene_class_hipk3$RF)
+VI.mat <- as.data.frame(VI)
+VI.mat <- round(VI.mat, 4)
+VI.mat <- VI.mat[order(VI.mat$MeanDecreaseAccuracy, decreasing = T),]
+VI.mat <- as.data.table(VI.mat)
+r <- rownames(VI)
+VI.mat$gene <- r
+
+# VI.mat
+VI.mat %>% 
+  mutate_if(is.numeric, function(x) {
+    cell_spec(x, bold = T, 
+              color = spec_color(x, end = 0.9),
+              font_size = spec_font_size(x))
+  }) %>%
+  # mutate(Species = cell_spec(
+  #   Species, color = "white", bold = T,
+  #   background = spec_color(1:10, end = 0.9, option = "A", direction = -1)
+  # )) %>%
+  kable(escape = F, align = "c", row.names = F, caption = "Table of selected genes used for classification of subgroups defined by circRNAs variation. For each class of response variable there is a OOB error rate of classification. In the 4th column there is the importance of the variable in the growing of the the random forest") %>%
+  kable_styling(c("striped"), full_width = F)
+
+```
+
+```{r eval=FALSE, include=FALSE}
+library(randomForestExplainer)
+min_depth_frame <- min_depth_distribution(gene_class_hipk3$RF)
+importance_frame <- measure_importance(gene_class_hipk3$RF)
+
+plot_multi_way_importance(importance_frame, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
+                          size_measure = "no_of_nodes", no_of_labels = 5)
 ```
 
 ### Enrichment analysis

@@ -206,40 +206,6 @@ stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", dig
   )
 }
 
-## Include this function somewhere
-# sparkline_hist <- function(x, breaks, type="bar"){
-#   as.character(
-#     htmltools::as.tags(
-#       sparkline(
-#         hist(
-#           x,
-#           breaks=breaks,
-#           plot=FALSE
-#         )$density,
-#         type = type
-#       )
-#     )
-#   )
-# }
-
-#' Define formatter function for plot table 
-#' 
-#'
-#' @export
-sparkline_hist <- function(x, g){
-  data = data.frame(count=x, group=g)
-    gg=ggplot(data, aes(x=count, color=group, fill=group)) +
-  geom_density(alpha=0.3) + 
-  # geom_vline(data=mu, aes(xintercept=grp.mean, color=group),
-  #            linetype="dashed") +
-  scale_fill_brewer(palette="Dark2") + 
-  scale_color_brewer(palette="Dark2") + 
-  # labs(title=paste0("circMarker (", circMark, ")", " counts density curve"), x = "Normalized read counts", y = "Density") + 
-  theme_classic()
-  plotly=plotly::ggplotly(gg)
-as.character(htmltools::as.tags(as_widget(plotly)))
-  }
-
 
 #' Export a Formattable as PNG, PDF, or JPEG
 #'
@@ -348,14 +314,6 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
         Marker=unique(Marker),
         mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
         mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
-        # circ.counts=sparkline_hist(
-        #   counts,
-        #   hist(tab_merge$counts,plot=FALSE)$breaks
-        # )
-        # count.density = sparkline_hist(
-        #     x = counts,
-        #     g = group
-        # )
         ) %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
           circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
           logFC = CircTarget::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
@@ -366,22 +324,14 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
           mean.G1 = CircTarget::color_tile4(digits = 3, fun = "comma"),
           mean.G2 = CircTarget::color_tile4(digits = 3, fun = "comma")))
     
-    # export_formattable(tab_plot, file = "formattble_table.png")
     print(tab_plot)
-    # formattable::formattable(tab_reduce, align = c("c","c","c","c"), list(
-    #   circ_id = formattable::formatter("span", style = ~ style(color = "grey", font.weight = "bold")),
-    #   log2FoldChange = color_tile3(digits = 3, n = 18),
-    #   padj = stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
-    #   Marker = formattable::formatter("span", 
-    #                      style = x ~ formastyle(color = ifelse(x, "orange", "gray")), 
-    #                      x ~ icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))))) 
 
   return(list(plot=tab_plot, circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = circ_mark[,c("circ_id", "sample_id", "group")]))
 }
   
-#' Detect dergulated genes using circRNA-markers as stratificator of samples
+#' Detect dergulated genes using circRNA-impacts as stratificator of samples
 #'
-#' @param circ_idofinterest circRNA-marker ID
+#' @param circ_idofinterest circRNA-impact ID
 #' @param circRNAs normalized read count of circRNAs
 #' @param linearRNAs row read count of gene
 #' @param colData coldata dataframe
@@ -389,7 +339,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
 #' @param padj alpha thershold in deseq test 
 #' @param expr A TRUE or FALSE variable controlling whether the median expression should be used to define the two group comparison in DEG analysis.
 #' 
-#' @return data.frame of gene deregulated per circRNA-markers
+#' @return data.frame of gene deregulated per circRNA-impacts
 #' 
 #'
 #' @export
@@ -447,3 +397,77 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
   return(as.data.frame(cbind(res.dt, n.degs)))
 }
 
+#' Detect the most discriminant genes using circRNA-impact as stratificator of samples
+#'
+#' @param circ_idofinterest circRNA-impact ID
+#' @param circRNAs normalized read count of circRNAs
+#' @param linearRNAs row read count of gene
+#' @param colData coldata dataframe
+#' @param covariates additinal covariates for batch effect
+#' @param th.corr correlation thershold in clean collinear genes 
+#' 
+#' 
+#' @return list of discriminating genes, n. genes selected, data.frame of ranked genes
+#' 
+#'
+#' @export
+gene_class = function(circ_idofinterest, circRNAs, linearRNAs, group, colData, covariates, th.corr){
+  circ_sample <- circRNAs %>% as.data.table() %>% dplyr::filter(circ_id==circ_idofinterest) %>% 
+    dplyr::select_if(is.numeric) %>%
+    gather(sample, sample_val) %>% dplyr::filter(sample_val>=median(sample_val))
+  circ_sample <- merge(circ_sample, colData, by = "sample")
+  
+  colData <- colData %>% mutate(class = if_else(sample%in%circ_sample$sample, paste0(circ_idofinterest, "_high"), 
+                                                 paste0(circ_idofinterest, "_low")))
+  
+  colData$class <- factor(colData$class)
+  colData$condition <- factor(colData$condition)
+  rownames(colData) <- colData$sample
+  
+  ## make deseqdataset for normalization
+  dds <- DESeqDataSetFromMatrix(countData = ceiling(filt.mat[, rownames(colData)]),
+                                colData = colData,
+                                design = as.formula(paste0("~", covariates, "+ class")))
+  dds = estimateSizeFactors(dds)
+  lin.norm.count = t(assay(rlog(object = dds)))
+  
+  nonColinearData <- DaMiR.FSelect(lin.norm.count, colData, th.corr=th.corr, type = "pearson", th.VIP = 3)
+  data_reduced <- nonColinearData$data
+  circKD <- colData$class[match(rownames(data_reduced), rownames(colData))]
+  trainingSet_DM <- cbind(data_reduced, circKD)
+  trainingSet_DM <- as.data.frame(trainingSet_DM)
+  trainingSet_DM$circKD <- factor(trainingSet_DM$circKD, labels=c("high", "low"), ordered = T)
+  
+  # VarSelRF
+  # varSelRF(xdata = select(trainingSet_DM, -circKD), Class = trainingSet_DM$circKD, 
+  #          ntree = 1000, whole.range = FALSE)
+  
+  
+  # Set RFE control
+  ctrl = rfeControl(functions = rfFuncs, # "rfFuncs" are built-in to caret
+                    method = "repeatedcv", repeats = 10,
+                    saveDetails = TRUE)
+  # By using rfFuncs, caret will use a random forest to evaluate the usefulness of a feature.
+  
+  # Set a sequence of feature-space sizes to search over:
+  sizes = seq(sqrt(ncol(data_reduced))*.5, ncol(data_reduced), by = 5)
+  # note, this will fit hundreds of forests (not trees), so it may take a while.
+  
+  # Use caret's rfe function to fit RF models to these different feature spaces
+  rfeResults = rfe(x = select(trainingSet_DM, -circKD), y = trainingSet_DM$circKD,
+                   sizes = sizes,
+                   rfeControl = ctrl)
+  VI <- varImp(object = rfeResults)
+  n.sel = rfeResults$optsize
+  VarSel = rfeResults$optVariables
+  
+  # varNames1 <- paste(VarSel, collapse = "+")
+  varNames1 <- gsub("-", "_", paste(colnames(select(trainingSet_DM, -circKD)), collapse = "+"))
+  dat.rf = trainingSet_DM
+  colnames(dat.rf) = gsub("-","_", colnames(dat.rf))
+  rf <- randomForest(formula = as.formula(paste("circKD", varNames1, 
+                                                sep = " ~ ")), data = dat.rf, 
+                     ntree = 1000, importance = TRUE)
+  return(list(variables = VarSel, n.var = n.sel, VI = VI, RF = rf))
+}
+  

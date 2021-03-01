@@ -8,7 +8,7 @@
 <!-- badges: end -->
 
 The goal of circIMPACT is to detect the molecular pathways associated
-with the expression levels of the target circRNAs.
+with the expression levels of certain circRNAs.
 
 ## Installation
 
@@ -22,7 +22,7 @@ devtools::install_github("AFBuratin/circIMPACT")
 
 ## Example
 
-This is a basic example which shows you how to detect circRNA-target:
+This is a basic example which shows you how to detect circRNA-impacted:
 
 ``` r
 
@@ -63,8 +63,8 @@ sf.filt <- sizeFactors(dds.filt.expr)
 circNormDeseq <- counts(dds.filt.expr, normalized = T)
 ```
 
-Use `marker.selection` function to find out circRNA-target specifing: \*
-adjusted p-value cutoff \* log fold change cutoff \* method for
+Use `marker.selection` function to find out circRNA impacted specifing:
+\* adjusted p-value cutoff \* log fold change cutoff \* method for
 calculate distance acrosso items \* method for
 clustering
 
@@ -80,7 +80,7 @@ circIMPACT <- circIMPACT::marker.selection(dat = data.filt, dds = dds.filt.expr,
 #> Loading required package: iterators
 ```
 
-For instance, you can see the distribution of circRNA-target:
+For instance, you can see the distribution of circRNA-impact:
 
 ``` r
   

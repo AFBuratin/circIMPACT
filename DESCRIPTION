@@ -13,7 +13,7 @@ Encoding: UTF-8
 LazyData: FALSE
 Suggests:
     knitr, rmarkdown, DESeq2, data.table, plyr, Rtsne, ggplot2, ggrepel, ComplexHeatmap, circlize, viridis, 
-    kableExtra, sparkline, magrittr
+    kableExtra, sparkline, magrittr, caret
 VignetteBuilder: knitr
 RoxygenNote: 7.1.1
 Depends: 
