@@ -260,13 +260,13 @@ library(doParallel)
 no_cores <- detectCores() - 1  
 registerDoParallel(cores=no_cores)  
 
-gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
-
-  results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
-                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
-                                       covariates = NULL), circIMPACT = markers.circrnas[i])
-}
+# gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
+# 
+#   results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
+#                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
+#                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
+#                                        covariates = NULL), circIMPACT = markers.circrnas[i])
+# }
 
 gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
@@ -289,27 +289,4 @@ gene_mark %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>%
 # dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
 #       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
 gene_mark[gene_mark$gene_id=="HPSE",]
-
-## -----------------------------------------------------------------------------
-#subset gene symbol deregulated using the interesting circRNA marker as stratificator
-geneList <- gene_mark$log2FoldChange[gene_mark$circIMPACT==markers.circrnas[5]]
-geneList <- gene_mark_hipk3$log2FoldChange
-
-# order gene list by foldchange
-geneList = sort(geneList, decreasing = TRUE)
-names(geneList) <- gene_mark$Gene[gene_mark$circIMPACT==markers.circrnas[5]]
-names(geneList) <- gene_mark_hipk3$gene_id
-
-library(gprofiler2)
-
-gostres2 <- gost(query = names(geneList)[names(geneList)!="."], 
-                 organism = "hsapiens", ordered_query = TRUE, 
-                 multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
-                 measure_underrepresentation = FALSE, evcodes = TRUE, 
-                 user_threshold = 0.05, correction_method = "g_SCS", 
-                 domain_scope = "annotated", custom_bg = NULL, 
-                 numeric_ns = "", sources = NULL)
-
-p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
-p
 

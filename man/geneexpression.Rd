@@ -2,7 +2,7 @@
 % Please edit documentation in R/circIMPACT_functions.R
 \name{geneexpression}
 \alias{geneexpression}
-\title{Detect dergulated genes using circRNA-markers as stratificator of samples}
+\title{Detect dergulated genes using circRNA-impacts as stratificator of samples}
 \usage{
 geneexpression(
   circ_idofinterest,
@@ -16,7 +16,7 @@ geneexpression(
 )
 }
 \arguments{
-\item{circ_idofinterest}{circRNA-marker ID}
+\item{circ_idofinterest}{circRNA-impact ID}
 
 \item{circRNAs}{normalized read count of circRNAs}
 
@@ -31,8 +31,8 @@ geneexpression(
 \item{expr}{A TRUE or FALSE variable controlling whether the median expression should be used to define the two group comparison in DEG analysis.}
 }
 \value{
-data.frame of gene deregulated per circRNA-markers
+data.frame of gene deregulated per circRNA-impacts
 }
 \description{
-Detect dergulated genes using circRNA-markers as stratificator of samples
+Detect dergulated genes using circRNA-impacts as stratificator of samples
 }
