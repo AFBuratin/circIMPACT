@@ -88,6 +88,8 @@ library(tidyverse)
 library(RColorBrewer)
 library(purrr)
 library(magrittr)
+library(randomForest)
+library(DaMiRseq)
 library(webshot)
 ```
 ----
