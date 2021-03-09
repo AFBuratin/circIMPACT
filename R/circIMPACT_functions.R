@@ -316,13 +316,13 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
         mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
         ) %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
           circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          logFC = CircTarget::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
-          p.adj = CircTarget::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
+          logFC = circIMPACT::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
+          p.adj = circIMPACT::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
           Marker = formattable::formatter("span", 
                              style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
                              x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
-          mean.G1 = CircTarget::color_tile4(digits = 3, fun = "comma"),
-          mean.G2 = CircTarget::color_tile4(digits = 3, fun = "comma")))
+          mean.G1 = circIMPACT::color_tile4(digits = 3, fun = "comma"),
+          mean.G2 = circIMPACT::color_tile4(digits = 3, fun = "comma")))
     
     print(tab_plot)
 
