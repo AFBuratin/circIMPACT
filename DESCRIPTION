@@ -1,0 +1,20 @@
+Package: circIMPACT
+Type: Package
+Title: Pipeline for study interaction and association between circular and linear RNA
+Version: 0.1.3
+Authors@R: person ("Alessia", "Buratin", email="alessia.buratin@studenti.unipd.it", 
+      role = c("aut","cre"))
+Description: Detect the molecular pathways associated with the expression levels of 
+    the target circRNAs. Transcriptome unsupervised and supervised analyses is performed 
+    and samples with high with those with low expression of the interested circRNA were compared obtaining 
+    genes differtially expressed in relation to circRNA pattern.
+License: GPL-2
+Encoding: UTF-8
+LazyData: FALSE
+Suggests:
+    knitr, rmarkdown, DESeq2, data.table, plyr, Rtsne, ggplot2, ggrepel, ComplexHeatmap, circlize, viridis, 
+    kableExtra, sparkline, magrittr, caret
+VignetteBuilder: knitr
+RoxygenNote: 7.1.1
+Depends: 
+    R (>= 2.10)
