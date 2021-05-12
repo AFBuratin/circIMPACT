@@ -128,7 +128,7 @@ sf <- sizeFactors(dds.circular)
 At first a simply filter of low count is applied to remove background noise.
 
 ```{r}
-data.filt <- circularData[rowSums(circularData >= 5) >= 2,]
+data.filt <- circularData[rowSums(circularData >= 10) >= 2,]
 dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample[order(coldata.df$condition)]]),
                                    colData = coldata.df[order(coldata.df$condition),],
                                    design = ~ condition))
@@ -295,7 +295,7 @@ g1 <- ggplot(data = d,
           aspect.ratio = 1)
 
 
-circRNArank = circ_contrib(matrix_pc = pca, K = 25)
+circRNArank = circIMPACT::circ_contrib(matrix_pc = pca, K = 25)
 
 
 ggpubr::ggarrange(ggarrange(g1, circRNArank$plot,
