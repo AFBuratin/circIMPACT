@@ -47,10 +47,7 @@ circIMPACT package version: `r packageVersion("circIMPACT")`
 
 *circIMPACT* provides an R interface to analyze a possible impact of circRNA expression profile in gene expression.
 
-<<<<<<< HEAD:vignettes/circIMPACT.Rmd
-The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNA expression with those with high expression. 
-=======
-The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNAs expression with those with high expression. 
+The toolset performs functional enrichment analysis and visualization of gene lists obtained comparing samples with low circRNA expression with those with high expression.
 
 The main tools in *circIMPACT* are:
 
@@ -91,13 +88,11 @@ library(magrittr)
 library(randomForest)
 library(DaMiRseq)
 library(webshot)
-<<<<<<< HEAD
 library(ggpubr)
 library(tidyr)
-=======
->>>>>>> bed5955bdae18eba2b30d7462e76e060bbade99b
+library(factoextra)
 ```
-----
+
 
 ### Input data
 
@@ -150,8 +145,7 @@ To establish a possible impact of circRNA in gene expression using different mol
 
 ```{r message=FALSE, warning=FALSE, include=TRUE}
 
-circIMPACT <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.1, lfc.cutoff = 1, 
-                                 method.d = "spearman", method.c = "complete", k = 2, median = TRUE)
+circIMPACT <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.01, lfc.cutoff = 1, method.d = "spearman", method.c = "complete", k = 2, median = TRUE)
 ```
 
 The result `list` will include:
@@ -159,13 +153,12 @@ The result `list` will include:
 * circ.markers - a data frame with DESeq estimates for each circRNAs.  
 * circ.targets - a vector of circRNAs defined as possible targets.
 * group.df - data.frame with a variable group that indicate the new stratification of samples by circRNAs expression.
-* plot - formatted table with info. about circIMPACT expression
+* plot - formatted table with info. about circIMPACT expression.
 
-### Density expression of circRNA-markers
+### Density expression of circRNA-IMPACT
 
 ```{r}
 circMark <- circIMPACT$circ.targetIDS[5]
-<<<<<<< HEAD
 circMark <-"11:33286412-33287511"
 circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
@@ -192,29 +185,9 @@ p <- ggplot(circMark_group.df, aes(x=counts, color=group, fill=group)) +
         legend.title = element_text(size=15),
         plot.title = element_text(size = 18),
         plot.subtitle = element_text(size = 13, color = "darkslategrey"))
-=======
-circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
-circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
-mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
-
-p <- ggplot(circMark_group.df, aes(x=counts, color=group, fill=group)) +
-  geom_density(alpha=0.3) + 
-  geom_vline(data=mu, aes(xintercept=Median, color=group),
-             linetype="dashed") +
-  geom_text(data=mu, aes(x=Median[group=="g1"] - 0.55, 
-                         label=paste0("Median:", round(Median[group=="g1"], 3), " Variance:", round(Variance[group=="g1"]), 3), y=0.15),
-            colour="black", angle=90, text=element_text(size=9)) +
-  geom_text(data=mu, aes(x=Median[group=="g2"] - 0.55, 
-                       label=paste0("Median:", round(Median[group=="g2"], 3), " Variance:", round(Variance[group=="g2"]), 3 ), y=0.15), 
-          colour="black", angle=90, text=element_text(size=11)) +  scale_fill_brewer(palette="Dark2") + 
-  scale_color_brewer(palette="Dark2") + 
-  labs(title=paste0("circMarker (", circMark, ")", " counts density curve"), x = "Normalized read counts", y = "Density") + 
-  theme_classic()
 p
->>>>>>> bed5955bdae18eba2b30d7462e76e060bbade99b
 
 ```
-
 
 ### Clustering analysis using CircRNA-markers
 
@@ -296,12 +269,9 @@ grid.arrange(plot_k, plot_h,  ncol=2)
 
 ```
 
-<<<<<<< HEAD
 ### CircRNA ranking
 
 After Principal Component Analysis for each circRNAs previously selected a contribution in variance explanation of the two condition comparade will be computed in order to rank circRNA for further analysis. The results can be investigated with visual representation in the PCA plot, by using **fviz_pca_biplot** function in the package *factoextra* or with a table with measure of contribution, obtained by **get_pca_var** function, for each circRNAs.
-=======
->>>>>>> bed5955bdae18eba2b30d7462e76e060bbade99b
 
 ```{r}
 pca <- prcomp(x = t(norm.counts.filt), center = T)
@@ -309,50 +279,50 @@ d <- data.frame(pca$x[rownames(coldata.df), c("PC1", "PC2")], coldata.df)
 PC1.var <- summary(pca)$importance["Proportion of Variance", 1]
 PC2.var <- summary(pca)$importance["Proportion of Variance", 2]
 g1 <- ggplot(data = d, 
-       mapping = aes(x = PC1, y = PC2)) +
-    geom_point(size = 4) +
+       mapping = aes(x = PC1, y = PC2, shape = condition)) +
+    geom_point(size = 5) +
     coord_fixed(ratio = 1) +
     xlab(paste0("PC1: ", percent(PC1.var))) +
     ylab(paste0("PC2: ", percent(PC2.var))) +
+    scale_shape_manual("", values = c(16,18)) +
     theme_classic() + 
-    theme(legend.position = "bottom", 
+    theme(legend.position = "bottom",
+          legend.direction = "vertical",
           plot.title = element_text(hjust = .5),
           text = element_text(size=20),
           axis.text.x = element_text(size=20),
-          axis.text.y = element_text(size=20))
-<<<<<<< HEAD
-
-=======
->>>>>>> bed5955bdae18eba2b30d7462e76e060bbade99b
-library(factoextra)
-#### compute contribution 
-contrib <- function(ind.coord, comp.sdev, n.ind){
-  100*(1/n.ind)*ind.coord^2/comp.sdev^2
-}
-ind.contrib <- t(apply(pca$x, 1, contrib, 
-                       pca$sdev, nrow(pca$x)))
-var <- get_pca_var(pca)
-<<<<<<< HEAD
-
-var$contrib
-g3 <- fviz_contrib(pca, choice="var", axes = 1:2, top = 25)
-
-table_circRNArank = g3$data[order(g3$data$contrib, decreasing = T),]
+          axis.text.y = element_text(size=20),
+          aspect.ratio = 1)
 
 
-ggpubr::ggarrange(ggarrange(g1, g3,
+circRNArank = circ_contrib(matrix_pc = pca, K = 25)
+
+
+ggpubr::ggarrange(ggarrange(g1, circRNArank$plot,
                             ncol = 2,
                             labels = c("PCA", "")),
                   nrow = 1)
 
 ```
 
+**circ_contrib** function select the top **K** circRNAs ranked by their contirubution in variance explanation for PC1 and PC2.
+  
 ## PCA biplot
 
 ```{r}
-top20 = ordered(var$contrib[,1])[1:25]
+library(factoextra)
+res = fviz_contrib(pca, choice ="var", axes = 1, top = 25)
+top25 = res$data$name[order(res$data$contrib, decreasing=T)][1:25]
+circAnnotation = read.csv("/media/Data/Li/circRNA_expression_per_sample.csv", header = T)
 
-fviz_pca_biplot(pca, #select.ind = list(contrib = 5), 
+circAnnotation$circCHR =  sub(":.*", "", circAnnotation$circ_id)
+circAnnotation$circstart = gsub(".*:(.*)\\-.*", "\\1", circAnnotation$circ_id)
+circAnnotation$circend = sub(".*-", "\\1", circAnnotation$circ_id)
+circAnnotation$circ_id <- paste0(circAnnotation$circCHR, ":", as.numeric(circAnnotation$circstart)-1, "-", circAnnotation$circend)
+
+rownames(pca$rotation) = paste0("circ", circAnnotation$gene_names[match( rownames(norm.counts.filt), circAnnotation$circ_id)], "_", rownames(norm.counts.filt))
+
+p = fviz_pca_biplot(pca, #select.ind = list(contrib = 5), 
                select.var = list(contrib = 25),
                ggtheme = theme_minimal(),
                title = "CircRNAs PCA loadings",
@@ -365,10 +335,10 @@ fviz_pca_biplot(pca, #select.ind = list(contrib = 5),
                repel = TRUE,
                 # Variables
                 alpha.var ="contrib", col.var = "contrib",
-                gradient.cols = "RdYlBu",
+                gradient.cols = "PuRd", 
                 legend.title = list(fill = "Condition", color = "Contrib",
                                     alpha = "Contrib")) +
-  labs(subtitle = "Top 20 variables with highest contribution of the event to PC1 and PC2",
+  labs(subtitle = "Top 25 variables with highest contribution of the event to PC1 and PC2",
        caption = "") +
   theme(axis.text.x = element_text(size=18), 
         axis.text.y = element_text(size=18), 
@@ -377,25 +347,10 @@ fviz_pca_biplot(pca, #select.ind = list(contrib = 5),
         legend.title = element_text(size=15),
         plot.title = element_text(size = 18),
         plot.subtitle = element_text(size = 13, color = "darkslategrey"))
-=======
-ordered(var$cos2)
-ordered(var$contrib[,1])
-library("corrplot")
-corrplot(var$cos2[c(1:10),c(1:3)],is.corr = FALSE,method = "ellipse")
 
-g3 <- fviz_contrib(pca, choice="var", axes = 1:3, top = 5)
-library(ggpubr)
-
-png("/Users/alessiafiamma/Desktop/PCA_VIZBI.png", width = 20,height = 15,units = "cm",res = 150)
-ggpubr::ggarrange(ggarrange(g1, g3, 
-                            ncol = 2, 
-                            labels = c("PCA", "")),
-                  nrow = 1)  
-dev.off()
->>>>>>> bed5955bdae18eba2b30d7462e76e060bbade99b
 ```
 
-### Heatmap using CircRNA-markers
+### Heatmap using CircRNA-IMPACT
 
 ```{r }
 
@@ -443,16 +398,9 @@ ht <- Heatmap(mat_scaled, name = "expression",
         heatmap_legend_param = list(direction = "horizontal")) +
 Heatmap(base_mean, name = "log2(base mean)", show_row_names = F, width = unit(2, "mm"), col = inferno(255), show_column_names = F, row_names_gp = gpar(fontsize = 5), heatmap_legend_param = list(direction = "horizontal"))
 
-<<<<<<< HEAD
 
 draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
 
-=======
-png("/Users/alessiafiamma/Google Drive (alessia.buratin.phd@gmail.com)/VIZIBI/Heatmap_VIZBI.png", width = 10,
-    height = 20,units = "cm",res = 150)
-draw(ht, heatmap_legend_side = "bottom", annotation_legend_side = "bottom")
-dev.off()
->>>>>>> bed5955bdae18eba2b30d7462e76e060bbade99b
 ```
 
 
@@ -476,26 +424,28 @@ filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
 circNormDeseq <- counts(dds.filt.expr, normalized = T) %>% as.data.frame()
 circNormDeseq$circ_id <- rownames(circNormDeseq)
 
-library(doParallel)
-no_cores <- detectCores() - 1  
-registerDoParallel(cores=no_cores)  
-
-# gene_mark <- foreach::foreach(i=1:5, .combine = rbind) %dopar% {
+# library(doParallel)
+# no_cores <- detectCores() - 5
+# registerDoParallel(cores=no_cores)
+# gene_mark <- foreach::foreach(i=1:25, .combine = rbind) %dopar% {
 # 
-#   results.temp <- data.frame(geneexpression(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
-#                                        linearRNAs = filt.mat, colData = coldata.df, padj = 0.1, 
-#                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
-#                                        covariates = NULL), circIMPACT = markers.circrnas[i])
+#   results.temp <- data.frame(geneexpression(circ_idofinterest = top25[i], circRNAs = circNormDeseq,
+#                                        linearRNAs = filt.mat, 
+#                                        colData = coldata.df, padj = 0.05,
+#                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%top25[i],],
+#                                        covariates = NULL), circIMPACT = top25[i])
 # }
 
-gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, colData = coldata.df, padj = 1, 
-                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%"11:33286412-33287511",],
-                                       covariates = NULL), circIMPACT = "11:33286412-33287511")
+gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511",
+                                             circRNAs = circNormDeseq,
+                                             linearRNAs = filt.mat, 
+                                             colData = coldata.df, 
+                                             padj = 0.1, 
+                                             group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%"11:33286412-33287511",],
+                                             covariates = NULL), 
+                              circIMPACT = "11:33286412-33287511")
 
 ```
-
-### Classification
 
 ```{r}
 
@@ -514,15 +464,16 @@ gene_mark %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>%
 gene_mark[gene_mark$gene_id=="HPSE",]
 head(gene_mark)
 # Make a basic volcano plot
-gene_mark_hipk3$expression = ifelse(gene_mark_hipk3$padj < 0.05 & abs(gene_mark_hipk3$log2FoldChange) >= 2, 
-                     ifelse(gene_mark_hipk3$log2FoldChange > 2 ,'Up','Down'),
+gene_mark_hipk3$expression = ifelse(gene_mark_hipk3$padj < 0.1 & abs(gene_mark_hipk3$log2FoldChange) >= 1.5, 
+                     ifelse(gene_mark_hipk3$log2FoldChange > 1.5 ,'Up','Down'),
                      'Stable')
 p <- ggplot(data = gene_mark_hipk3, 
             aes(x = log2FoldChange, 
-                y = -log10(pvalue), 
+                y = -log10(padj), 
                 colour=expression,
                 label = gene_id)) +
   geom_point(alpha=0.4, size=3.5) +
+  geom_text_repel(aes(label=ifelse((abs(log2FoldChange) >= 5)&(padj<=0.01), gene_id, "")), color = "black") +
   scale_color_manual(values=c("blue", "grey","red"))+
   xlim(c(-6.5, 6.5)) +
   geom_vline(xintercept=c(-1,1),lty=4,col="black",lwd=0.8) +
@@ -538,7 +489,6 @@ p <- ggplot(data = gene_mark_hipk3,
         text = element_text(size=20),
         axis.text.x = element_text(size=20),
         axis.text.y = element_text(size=20))
-<<<<<<< HEAD
 
 p
 #ggplotly(p)
@@ -547,57 +497,40 @@ p
 
 ```{r}
 my_data = data.frame(circHIPK3 = as.vector(t(circNormDeseq["11:33286412-33287511",-7])), 
-                     QKI = filt.mat["QKI",])
-ggscatter(my_data, x = "circHIPK3", y = "QKI", 
+                     HPSE = filt.mat["HPSE",])
+ggscatter(my_data, x = "circHIPK3", y = "HPSE", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "circHIPK3 expression", ylab = "QKI gene expression")
 ```
 
+### Classification
+
 ```{r}
-library(doParallel)
+# library(doParallel)
 library(caret)
 library(dplyr)
 library(tidyr)
 library(data.table)
-no_cores <- detectCores() - 1  
-registerDoParallel(cores=no_cores)  
-
-# gene_class <- foreach::foreach(i=1:5, .combine = list) %dopar% {
+# no_cores <- detectCores() - 6
+# registerDoParallel(cores=no_cores)
+# gene_class <- foreach::foreach(i=1:25, .combine = list) %dopar% {
 # 
-#   results.temp <- gene_class(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
-#                                        linearRNAs = filt.mat, colData = coldata.df, 
-#                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
+#   results.temp <- gene_class(circ_idofinterest = top25[i], circRNAs = circNormDeseq,
+#                                        linearRNAs = filt.mat, colData = coldata.df,
+#                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%top25[i],],
 #                                        covariates = NULL, th.corr = 0.5)
 # }
 
-gene_class_hipk3 <- circIMPACT::gene_class(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, 
-                                       colData = coldata.df, 
-=======
-p
-ggplotly(p)
-```
-
-
-```{r}
-library(doParallel)
-no_cores <- detectCores() - 1  
-registerDoParallel(cores=no_cores)  
-
-gene_class <- foreach::foreach(i=1:5, .combine = list) %dopar% {
-
-  results.temp <- gene_class(circ_idofinterest = markers.circrnas[i], circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, colData = coldata.df, 
-                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%markers.circrnas[i],],
-                                       covariates = NULL, th.corr = 0.5)
-}
-
-gene_class_hipk3 <- gene_class(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq, 
-                                       linearRNAs = filt.mat, colData = coldata.df, 
->>>>>>> bed5955bdae18eba2b30d7462e76e060bbade99b
-                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%"11:33286412-33287511",],
-                                       covariates = NULL, th.corr = 0.5)
+gene_class_hipk3 <- circIMPACT::gene_class(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq,
+                                       linearRNAs = filt.mat,
+                                       colData = coldata.df,
+                                       group =
+              circIMPACT$group.df[circIMPACT$group.df$circ_id%in%"11:33286412-33287511",],
+                                       covariates = NULL,
+              th.corr = 0.5)
+#p
+#ggplotly(p)
 ```
 
 ```{r}
@@ -638,13 +571,14 @@ plot_multi_way_importance(importance_frame, x_measure = "accuracy_decrease", y_m
 
 ```{r}
 #subset gene symbol deregulated using the interesting circRNA marker as stratificator
-geneList <- gene_mark$log2FoldChange[gene_mark$circIMPACT==markers.circrnas[5]]
+# geneList <- gene_mark$log2FoldChange[gene_mark$circIMPACT==markers.circrnas[5]]
 geneList <- gene_mark_hipk3$log2FoldChange
+names(geneList) <- gene_mark_hipk3$gene_id
 
 # order gene list by foldchange
 geneList = sort(geneList, decreasing = TRUE)
-names(geneList) <- gene_mark$Gene[gene_mark$circIMPACT==markers.circrnas[5]]
-names(geneList) <- gene_mark_hipk3$gene_id
+# names(geneList) <- gene_mark$Gene[gene_mark$circIMPACT==markers.circrnas[5]]
+geneList <- geneList[abs(geneList)>1.5]
 
 library(gprofiler2)
 
@@ -658,5 +592,17 @@ gostres2 <- gost(query = names(geneList)[names(geneList)!="."],
 
 p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
 p
+```
+
+```{r eval=FALSE, include=FALSE}
+gem <- gostres2$result[,c("term_id", "term_name", "p_value", "intersection_size","intersection")]
+colnames(gem) <- c("GO.ID", "Description", "p.Val", "N.genes", "Genes")
+gem$FDR <- gem$p.Val
+
+gem <- gem[,c("GO.ID", "Description", "p.Val", "FDR", "N.genes", "Genes")]
+gem = as.data.table(gem)
+# head(gem)
+#gem[like(Genes,"HPSE,"), "Description"]
+# write.csv(gem, "/home/alessia/Scrivania/enrichmentcircHIPK3.csv")
 ```
 
