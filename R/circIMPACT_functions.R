@@ -206,6 +206,13 @@ stoplighttile <- function(cut1 = .01, cut2 = .05, cut3 = 0.1, fun = "comma", dig
   )
 }
 
+#' Define contribution selection function for ranking
+#' 
+#'
+#' @export
+contrib <- function(ind.coord, comp.sdev, n.ind){
+  100*(1/n.ind)*ind.coord^2/comp.sdev^2
+}
 
 #' Export a Formattable as PNG, PDF, or JPEG
 #'
@@ -311,24 +318,56 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
       dplyr::summarise(
         logFC=round(mean(log2FoldChange),4),
         p.adj=round(mean(padj),4),
-        Marker=unique(Marker),
+        CircIMPACT=unique(Marker),
         mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
         mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
         ) %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
-          circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", font.weight = "bold")),
-          logFC = circIMPACT::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
-          p.adj = circIMPACT::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
-          Marker = formattable::formatter("span", 
+          circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", 
+                                                                                font.weight = "bold")),
+          logFC =  circIMPACT::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
+          p.adj =  circIMPACT::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
+          CircIMPACT = formattable::formatter("span", 
                              style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
                              x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
-          mean.G1 = circIMPACT::color_tile4(digits = 3, fun = "comma"),
-          mean.G2 = circIMPACT::color_tile4(digits = 3, fun = "comma")))
+          area(col=5:6) ~ circIMPACT::color_tile4(digits = 3, fun = "comma")))
+          # mean.G2 = circIMPACT::color_tile4(digits = 3, fun = "comma")))
     
     print(tab_plot)
 
   return(list(plot=tab_plot, circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = circ_mark[,c("circ_id", "sample_id", "group")]))
 }
   
+
+
+#' Select circRNA markers
+#' To establish a possible impact of circRNA in gene expression
+#' we select a subset of circRNA defined as markers: 
+#' only circRNA which expression can discretize two groups 
+#' (DESeq adj. p-value<.01) have been selected.
+#'
+#' @param dat circRNA data set
+#' @param dds DeseqDataSet object filterd
+#' @param sf sizefactor  
+#' @param p.cutoff select only circRNAs signficantly differentially expressed
+#' @param lfc.cutoff log fold change cutoff to select circRNAs highly deregulated
+#' @param k number of group in K-means algorithm 
+#' @param method.d method for calculate matrix distance
+#' @param method.c method for clustering
+#' 
+#' 
+#' @return Table of top K circRNA for subsequent analysis
+#' 
+#'
+#' @export
+
+circ_contrib = function(matrix_pc, K){
+  var <- get_pca_var(matrix_pc)
+  g3 <- fviz_contrib(matrix_pc, choice="var", axes = 1:2, top = K)
+  tab = g3$data[order(g3$data$contrib, decreasing = T),]
+  return(list(plot = g3, table=tab, var = var))
+}
+
+
 #' Detect dergulated genes using circRNA-impacts as stratificator of samples
 #'
 #' @param circ_idofinterest circRNA-impact ID
@@ -389,7 +428,7 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
       ## performe DEGs
       dds <- DESeq(dds, fitType = "local")
       res <- results(dds)
-      n.degs <- sum(res$padj <= padj, na.rm = T)
+        n.degs <- sum(res$padj <= padj, na.rm = T)
       degs <- res[which(res$padj <= padj), ]
       res.dt <- as.data.table(res[which(res$padj <= padj), ], keep.rownames = "gene_id")
       rownames(res.dt) <- res.dt$gene_id
