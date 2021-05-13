@@ -266,14 +266,15 @@ marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, metho
   library(doParallel)
   library(dplyr)
   library(tidyr)
-  no_cores <- detectCores() - 1  
+  no_cores <- detectCores() - 5  
   registerDoParallel(cores=no_cores)  
   
   circ_mark = foreach::foreach(i=1:nrow(dat), .combine=rbind) %dopar% {
 
   circ_id <- rownames(dat)[i]
   #make a for loop to estimate log2FC and p.adj to select marker circRNAs
-  results.temp <- marker.detection(circ_id = circ_id, circ.m = dat[circ_id,], dds = dds[circ_id,], 
+  results.temp <- marker.detection(circ_id = circ_id, circ.m = dat[circ_id,],
+                                   dds = dds[circ_id,], 
                                    sf = sf, method.d = method.d, 
                                    method.c = method.c, k = k, median = median)
   
@@ -510,3 +511,9 @@ gene_class = function(circ_idofinterest, circRNAs, linearRNAs, group, colData, c
   return(list(variables = VarSel, n.var = n.sel, VI = VI, RF = rf))
 }
   
+
+class.res25 = rbindlist(lapply(lapply(gene_class, "[[", "variables"), function(x) as.data.frame(x)), idcol = "circIMPACT") %>% dplyr::group_by(circIMPACT) %>% tally()
+degs.res25 = gene_mark %>% as.data.table() %>% dplyr::group_by(circIMPACT, n.degs) %>% 
+  dplyr::summarize(UP = sum(log2FoldChange>0),
+                   DW = sum(log2FoldChange<0)) 
+write.csv(merge(class.res25, degs.res25, by="circIMPACT"), "/media/Data/CircIMPACT/res25_tab2.csv")
