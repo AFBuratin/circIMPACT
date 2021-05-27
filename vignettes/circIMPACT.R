@@ -34,6 +34,7 @@ library(webshot)
 library(ggpubr)
 library(tidyr)
 library(factoextra)
+library(NbClust)
 
 ## -----------------------------------------------------------------------------
 data("circularData")
@@ -64,7 +65,7 @@ dds.circular <- suppressMessages(estimateSizeFactors(dds.circular))
 sf <- sizeFactors(dds.circular)
 
 ## -----------------------------------------------------------------------------
-data.filt <- circularData[rowSums(circularData >= 5) >= 2,]
+data.filt <- circularData[rowSums(circularData >= 10) >= 2,]
 dds.filt.expr <- suppressMessages(DESeqDataSetFromMatrix(countData = ceiling(data.filt[,coldata.df$sample[order(coldata.df$condition)]]),
                                    colData = coldata.df[order(coldata.df$condition),],
                                    design = ~ condition))
@@ -74,12 +75,19 @@ circNormDeseq <- counts(dds.filt.expr, normalized = T)
 
 ## ----message=FALSE, warning=FALSE, include=TRUE-------------------------------
 
-circIMPACT <- marker.selection(dat = circNormDeseq, dds = dds.filt.expr, sf = sf.filt, p.cutoff = 0.01, lfc.cutoff = 1, method.d = "spearman", method.c = "complete", k = 2, median = TRUE)
+circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq, 
+                               dds = dds.filt.expr, 
+                               sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1, 
+                               method.d = "euclidean", method.c = "ward.D2", 
+                               k = 2, median = TRUE, choose.k = FALSE, index.m = "kl")
+
+# circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq, 
+#                                       dds = dds.filt.expr, 
+#                                           sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, method.d = "euclidean", method.c = "ward.D2", k = 2, median = FALSE, choose.k = TRUE, index.m = "kl")
 
 ## -----------------------------------------------------------------------------
-circMark <- circIMPACT$circ.targetIDS[5]
 circMark <-"11:33286412-33287511"
-circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
+  circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=sd(counts))
 
@@ -105,7 +113,6 @@ p <- ggplot(circMark_group.df, aes(x=counts, color=group, fill=group)) +
         plot.title = element_text(size = 18),
         plot.subtitle = element_text(size = 13, color = "darkslategrey"))
 p
-
 
 ## ----message=FALSE------------------------------------------------------------
 markers.circrnas <- circIMPACT$circ.targetIDS
@@ -189,7 +196,7 @@ g1 <- ggplot(data = d,
     coord_fixed(ratio = 1) +
     xlab(paste0("PC1: ", percent(PC1.var))) +
     ylab(paste0("PC2: ", percent(PC2.var))) +
-    scale_shape_manual("", values = c(16,18)) +
+    scale_shape_manual("", values = c(8,16)) +
     theme_classic() + 
     theme(legend.position = "bottom",
           legend.direction = "vertical",
@@ -200,7 +207,7 @@ g1 <- ggplot(data = d,
           aspect.ratio = 1)
 
 
-circRNArank = circ_contrib(matrix_pc = pca, K = 25)
+circRNArank = circIMPACT::circ_contrib(matrix_pc = pca, K = 25)
 
 
 ggpubr::ggarrange(ggarrange(g1, circRNArank$plot,
@@ -226,18 +233,23 @@ p = fviz_pca_biplot(pca, #select.ind = list(contrib = 5),
                select.var = list(contrib = 25),
                ggtheme = theme_minimal(),
                title = "CircRNAs PCA loadings",
+               #habillage=coldata.df$condition,
                # Individuals
                 geom.ind = "point",
-                fill.ind = coldata.df$condition, col.ind = "black",
-                pointshape = 21, pointsize = 2,
+                #fill.ind = coldata.df$condition, 
+               col.ind = "black",
+              #pointshape = coldata.df$condition, 
+               pointsize = 3,
                 palette = "jco",
                 addEllipses = FALSE,
                repel = TRUE,
                 # Variables
-                alpha.var ="contrib", col.var = "contrib",
-                gradient.cols = "PuRd", 
-                legend.title = list(fill = "Condition", color = "Contrib",
-                                    alpha = "Contrib")) +
+               # alpha.var ="contrib", 
+               col.var = "contrib",
+                # gradient.cols = c("#C51B7D", "#E9A3C9", "#A1D76A", "#4D9221"), 
+                gradient.cols = c("darkviolet", "deeppink2", "deeppink4"),
+                legend.title = list(shape = "Condition", color = "Contrib")) +
+                                    #alpha = "Contrib")) +
   labs(subtitle = "Top 25 variables with highest contribution of the event to PC1 and PC2",
        caption = "") +
   theme(axis.text.x = element_text(size=18), 
@@ -246,8 +258,8 @@ p = fviz_pca_biplot(pca, #select.ind = list(contrib = 5),
         legend.text = element_text(size=15), 
         legend.title = element_text(size=15),
         plot.title = element_text(size = 18),
-        plot.subtitle = element_text(size = 13, color = "darkslategrey"))
-
+        plot.subtitle = element_text(size = 13, color = "gray28"))
+p
 
 ## -----------------------------------------------------------------------------
 
@@ -312,18 +324,19 @@ filt.mat <- count.matrix[rowSums(count.matrix >= min.count) >= min.col, ]
 circNormDeseq <- counts(dds.filt.expr, normalized = T) %>% as.data.frame()
 circNormDeseq$circ_id <- rownames(circNormDeseq)
 
-library(doParallel)
-no_cores <- detectCores() - 5
-registerDoParallel(cores=no_cores)
-gene_mark <- foreach::foreach(i=1:25, .combine = rbind) %dopar% {
+# library(doParallel)
+# no_cores <- detectCores() - 5
+# registerDoParallel(cores=no_cores)
+# gene_mark <- foreach::foreach(i=1:25, .combine = rbind) %dopar% {
+# 
+#   results.temp <- data.frame(gene.expression(circ_idofinterest = top25[i], circRNAs = circNormDeseq,
+#                                        linearRNAs = filt.mat,
+#                                        colData = coldata.df, padj = 0.05,
+#                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%top25[i],],
+#                                        covariates = NULL), circIMPACT = top25[i])
+# }
 
-  results.temp <- data.frame(geneexpression(circ_idofinterest = top25[i], circRNAs = circNormDeseq,
-                                       linearRNAs = filt.mat, colData = coldata.df, padj = 0.05,
-                                       group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%top25[i],],
-                                       covariates = NULL), circIMPACT = top25[i])
-}
-
-gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33287511",
+gene_mark_hipk3 <- data.frame(gene.expression(circ_idofinterest = "11:33286412-33287511",
                                              circRNAs = circNormDeseq,
                                              linearRNAs = filt.mat, 
                                              colData = coldata.df, 
@@ -335,8 +348,10 @@ gene_mark_hipk3 <- data.frame(geneexpression(circ_idofinterest = "11:33286412-33
 
 ## -----------------------------------------------------------------------------
 
-gene_mark <- as.data.table(gene_mark_hipk3)
-gene_mark %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>% 
+gene_mark_hip <- as.data.table(gene_mark_hipk3)
+gene_mark_tab = gene_mark_hip %>% dplyr::group_by(circIMPACT, n.degs) %>% dplyr::mutate(UP=sum(log2FoldChange>0), DW=sum(log2FoldChange<0)) %>% dplyr::select(circIMPACT, n.degs, UP, DW)
+
+gene_mark_hip %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>% 
   arrange(padj) %>% 
   select(circIMPACT, Gene, logFC) %>% head(20) %>% 
   formattable::formattable(., align = c("c","c","c"), list(
@@ -347,11 +362,11 @@ gene_mark %>% dplyr::rename("Gene" = "gene_id", "logFC" = "log2FoldChange") %>%
 # knitr::kable(gene_mark %>% dplyr::group_by(circRNA_markers, n.degs) %>% 
 # dplyr::summarise(DEGs = paste(sort(gene_id),collapse=", ")),
 #       escape = F, align = "c", row.names = T, caption = "circRNA-DEGs assosiation") %>% kable_styling(c("striped"), full_width = T)
-gene_mark[gene_mark$gene_id=="HPSE",]
-head(gene_mark)
+gene_mark_hip[gene_mark_hip$gene_id=="HPSE",]
+# head(gene_mark_hip)
 # Make a basic volcano plot
-gene_mark_hipk3$expression = ifelse(gene_mark_hipk3$padj < 0.1 & abs(gene_mark_hipk3$log2FoldChange) >= 1.5, 
-                     ifelse(gene_mark_hipk3$log2FoldChange > 1.5 ,'Up','Down'),
+gene_mark_hipk3$expression = ifelse(gene_mark_hipk3$padj <= 0.01 & abs(gene_mark_hipk3$log2FoldChange) >= 1, 
+                     ifelse(gene_mark_hipk3$log2FoldChange >= 1 ,'Up','Down'),
                      'Stable')
 p <- ggplot(data = gene_mark_hipk3, 
             aes(x = log2FoldChange, 
@@ -359,11 +374,17 @@ p <- ggplot(data = gene_mark_hipk3,
                 colour=expression,
                 label = gene_id)) +
   geom_point(alpha=0.4, size=3.5) +
-  geom_text_repel(aes(label=ifelse((abs(log2FoldChange) >= 5)&(padj<=0.01), gene_id, "")), color = "black") +
-  scale_color_manual(values=c("blue", "grey","red"))+
+  geom_text_repel(aes(label=ifelse((abs(log2FoldChange) >= 5)&(padj<=0.01), gene_id, "")), color = "black", size = 6) +
+  scale_color_manual("",
+                     guide = guide_legend(title.position = "top",
+                                          ncol = 1,
+                                          title.hjust = .5),
+                     values = setNames(c("blue", "grey","red"),
+                                       nm = c("Down", "Stable","Up"))) +
+  # scale_color_manual(values=c("blue", "grey","red"))+
   xlim(c(-6.5, 6.5)) +
   geom_vline(xintercept=c(-1,1),lty=4,col="black",lwd=0.8) +
-  geom_hline(yintercept = 1.301,lty=4,col="black",lwd=0.8) +
+  geom_hline(yintercept = 2,lty=4,col="black",lwd=0.8) +
   labs(x="log2(fold change)",
        y="-log10 (adj.p-value)",
        title="")  +
@@ -373,8 +394,8 @@ p <- ggplot(data = gene_mark_hipk3,
         legend.title = element_blank(),
         legend.text = element_text(size=20),
         text = element_text(size=20),
-        axis.text.x = element_text(size=20),
-        axis.text.y = element_text(size=20))
+        axis.text.x = element_text(size=25),
+        axis.text.y = element_text(size=25))
 
 p
 #ggplotly(p)
@@ -385,55 +406,75 @@ my_data = data.frame(circHIPK3 = as.vector(t(circNormDeseq["11:33286412-33287511
                      HPSE = filt.mat["HPSE",])
 ggscatter(my_data, x = "circHIPK3", y = "HPSE", 
           add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
+          cor.coef = TRUE, cor.method = "spearman",
           xlab = "circHIPK3 expression", ylab = "QKI gene expression")
 
 ## -----------------------------------------------------------------------------
-# library(doParallel)
+my_data = data.frame(circHIPK3 = as.vector(t(circNormDeseq["11:33286412-33287511",-7])), 
+                     HPSE = filt.mat["HPSE",])
+my_data$sample_id = rownames(my_data)
+my_data$condition = meta$condition[match(my_data$sample_id, meta$sample)]
+ggplot(reshape2::melt(my_data, id.var = c("sample_id","condition")),
+       aes(x=condition, y=value, group=condition)) + 
+  geom_boxplot(aes(fill=condition)) + 
+  facet_grid( variable ~ ., scales='free') +
+  scale_fill_manual(values = c("#1B9E77","#D95F02")) +
+theme_bw() +
+  xlab("") + 
+  ylab("Normalized Expression") +
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position="none", 
+        legend.title = element_blank(),
+        legend.text = element_text(size=20),
+        text = element_text(size=20),
+        axis.text.x = element_text(size=20),
+        axis.text.y = element_text(20),
+        strip.text.x = element_text(size = 20))
+
+
+## -----------------------------------------------------------------------------
+library(doParallel)
 library(caret)
 library(dplyr)
 library(tidyr)
 library(data.table)
 # no_cores <- detectCores() - 6
 # registerDoParallel(cores=no_cores)
-# gene_class <- foreach::foreach(i=1:25, .combine = list) %dopar% {
+# gene.class <- foreach::foreach(i=1:25, .combine = list) %dopar% {
 # 
 #   results.temp <- gene_class(circ_idofinterest = top25[i], circRNAs = circNormDeseq,
 #                                        linearRNAs = filt.mat, colData = coldata.df,
 #                                        group = circIMPACT$group.df[circIMPACT$group.df$circ_id%in%top25[i],],
-#                                        covariates = NULL, th.corr = 0.5)
+#                                        covariates = NULL, th.corr = 0.3)
 # }
 
-gene_class_hipk3 <- circIMPACT::gene_class(circ_idofinterest = "11:33286412-33287511", circRNAs = circNormDeseq,
+gene_class_hipk3 <- circIMPACT::gene.class(circ_idofinterest = "11:33286412-33287511", 
+                                           circRNAs = circNormDeseq,
                                        linearRNAs = filt.mat,
                                        colData = coldata.df,
                                        group =
               circIMPACT$group.df[circIMPACT$group.df$circ_id%in%"11:33286412-33287511",],
                                        covariates = NULL,
-              th.corr = 0.5)
+              th.corr = 0.3)
 #p
 #ggplotly(p)
 
 ## -----------------------------------------------------------------------------
 VI <- importance(gene_class_hipk3$RF)
 VI.mat <- as.data.frame(VI)
-VI.mat <- round(VI.mat, 4)
-VI.mat <- VI.mat[order(VI.mat$MeanDecreaseAccuracy, decreasing = T),]
-VI.mat <- as.data.table(VI.mat)
 r <- rownames(VI)
 VI.mat$gene <- r
+VI.mat <- VI.mat[order(VI.mat$MeanDecreaseAccuracy, decreasing = T),]
+VI.mat <- as.data.table(VI.mat)
+
 
 # VI.mat
-VI.mat %>% 
+VI.mat %>% mutate_at(1:4, round, 3) %>% head() %>% 
   mutate_if(is.numeric, function(x) {
     cell_spec(x, bold = T, 
               color = spec_color(x, end = 0.9),
               font_size = spec_font_size(x))
   }) %>%
-  # mutate(Species = cell_spec(
-  #   Species, color = "white", bold = T,
-  #   background = spec_color(1:10, end = 0.9, option = "A", direction = -1)
-  # )) %>%
   kable(escape = F, align = "c", row.names = F, caption = "Table of selected genes used for classification of subgroups defined by circRNAs variation. For each class of response variable there is a OOB error rate of classification. In the 4th column there is the importance of the variable in the growing of the the random forest") %>%
   kable_styling(c("striped"), full_width = F)
 
@@ -443,41 +484,215 @@ VI.mat %>%
 #  min_depth_frame <- min_depth_distribution(gene_class_hipk3$RF)
 #  importance_frame <- measure_importance(gene_class_hipk3$RF)
 #  
-#  plot_multi_way_importance(importance_frame, x_measure = "accuracy_decrease", y_measure = "gini_decrease",
+#    plot_multi_way_importance(importance_frame, x_measure = "accuracy_decrease", y_measure = "gini_decrease",
 #                            size_measure = "no_of_nodes", no_of_labels = 5)
 
-## -----------------------------------------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
+library(enrichplot)
+
+library(DOSE)
+
+library(clusterProfiler)
+
+organism = "org.Hs.eg.db"
+library(organism, character.only = TRUE)
+
+
+## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
 #subset gene symbol deregulated using the interesting circRNA marker as stratificator
-# geneList <- gene_mark$log2FoldChange[gene_mark$circIMPACT==markers.circrnas[5]]
 geneList <- gene_mark_hipk3$log2FoldChange
 names(geneList) <- gene_mark_hipk3$gene_id
 
 # order gene list by foldchange
 geneList = sort(geneList, decreasing = TRUE)
 # names(geneList) <- gene_mark$Gene[gene_mark$circIMPACT==markers.circrnas[5]]
-geneList <- geneList[abs(geneList)>1.5]
+geneList <- geneList[abs(geneList)>=1.89]
+# library(gprofiler2)
+# gostres2 <- gost(query = names(geneList)[names(geneList)!="."], 
+#                  organism = "hsapiens", ordered_query = TRUE, 
+#                  multi_query = FALSE, significant = FALSE, exclude_iea = FALSE, 
+#                  measure_underrepresentation = FALSE, evcodes = TRUE, 
+#                  user_threshold = 0.05, correction_method = "g_SCS", 
+#                  domain_scope = "annotated", custom_bg = NULL, 
+#                  numeric_ns = "", sources = NULL)
+# 
+# p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
+# p
 
-library(gprofiler2)
+gse <- gseGO(geneList=geneList, 
+             ont ="ALL", 
+             keyType = "SYMBOL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
 
-gostres2 <- gost(query = names(geneList)[names(geneList)!="."], 
-                 organism = "hsapiens", ordered_query = TRUE, 
-                 multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
-                 measure_underrepresentation = FALSE, evcodes = TRUE, 
-                 user_threshold = 0.05, correction_method = "g_SCS", 
-                 domain_scope = "annotated", custom_bg = NULL, 
-                 numeric_ns = "", sources = NULL)
+df_gse <- gse@result
+df_gse = as.data.table(df_gse)
 
-p <- gostplot(gostres2, capped = FALSE, interactive = TRUE)
-p
+## -----------------------------------------------------------------------------
+dotplot(gse, showCategory=10, split=".sign", title = "Enriched GO") + facet_grid(.~.sign)
 
-## ----eval=FALSE, include=FALSE------------------------------------------------
-#  gem <- gostres2$result[,c("term_id", "term_name", "p_value", "intersection_size","intersection")]
-#  colnames(gem) <- c("GO.ID", "Description", "p.Val", "N.genes", "Genes")
-#  gem$FDR <- gem$p.Val
+
+## -----------------------------------------------------------------------------
+upsetplot(gse, showCategory=10)
+
+
+## -----------------------------------------------------------------------------
+kable(head(df_gse[like(core_enrichment,"HPSE/"),]), escape = F, align = "c", row.names = F, caption = "Enrichment of GO including HPSE gene") %>%
+  kable_styling(c("striped"), full_width = F)
+
+## ----message=FALSE, warning=FALSE, include=FALSE------------------------------
+original_gene_list <- geneList
+ids<-bitr(names(original_gene_list), fromType = "SYMBOL", toType = "ENTREZID", OrgDb=organism)
+
+de_ids = ids[!duplicated(ids[c("SYMBOL")]),]
+
+Eids<-bitr(names(original_gene_list), fromType = "SYMBOL", toType = "ENSEMBL", OrgDb=organism)
+
+# Create a new dataframe df2 which has only the genes which were successfully mapped using the bitr function above
+df <- gene_mark_hipk3
+df$SYMBOL <- df$gene_id
+df <- df[which(df$SYMBOL%in%de_ids$SYMBOL),]
+
+# Create a new column with the corresponding ENTREZ IDs
+df$Y = de_ids$ENTREZID[match(df$SYMBOL,de_ids$SYMBOL)]
+
+# Create a vector of the gene unuiverse
+kegg_gene_list <- df$log2FoldChange
+
+# Name vector with ENTREZ ids
+names(kegg_gene_list) <- df$Y
+
+# omit any NA values 
+kegg_gene_list<-na.omit(kegg_gene_list)
+
+# sort the list in decreasing order (required for clusterProfiler)
+kegg_gene_list = sort(kegg_gene_list, decreasing = TRUE)
+
+kegg_organism = "hsa"
+kk2 <- gseKEGG(geneList     = kegg_gene_list,
+               organism     = kegg_organism,
+               nPerm        = 10000,
+               minGSSize    = 3,
+               maxGSSize    = 800,
+               pvalueCutoff = 0.05,
+               pAdjustMethod = "none",
+               keyType       = "kegg")
+#> preparing geneSet collections...
+#> GSEA analysis...
+#> leading edge analysis...
+#> done...
+gene <- names(kegg_gene_list)
+edox <- setReadable(kk2, 'org.Hs.eg.db', 'ENTREZID')
+df_kegg = as.data.table(edox@result)
+
+## -----------------------------------------------------------------------------
+dotplot(kk2, showCategory=10, split=".sign", title = "Enriched Pathways") + facet_grid(.~.sign)
+
+
+## -----------------------------------------------------------------------------
+upsetplot(kk2, showCategory = 10)
+
+
+## ----message=FALSE, warning=FALSE---------------------------------------------
+library(enrichplot)
+
+library(DOSE)
+
+library(clusterProfiler)
+
+organism = "org.Hs.eg.db"
+library(organism, character.only = TRUE)
+
+
+## ----message=FALSE, warning=FALSE---------------------------------------------
+#subset gene symbol deregulated using the interesting circRNA marker as stratificator
+# geneList <- gene_mark$log2FoldChange[gene_mark$circIMPACT==markers.circrnas[5]]
+geneList <- gene_mark_hipk3$log2FoldChange[gene_mark_hipk3$gene_id%in%rownames(gene_class_hipk3$VI)]
+names(geneList) <- gene_mark_hipk3$gene_id[gene_mark_hipk3$gene_id%in%rownames(gene_class_hipk3$VI)]
+
+# order gene list by foldchange
+geneList = sort(geneList, decreasing = TRUE)
+# names(geneList) <- gene_mark$Gene[gene_mark$circIMPACT==markers.circrnas[5]]
+geneList <- geneList[abs(geneList)>=1.89]
+
+
+gse <- gseGO(geneList=geneList, 
+             ont ="ALL", 
+             keyType = "SYMBOL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
+
+df_gse <- gse@result
+df_gse = as.data.table(df_gse)
+
+## -----------------------------------------------------------------------------
+dotplot(gse, showCategory=10, split=".sign", title = "Enriched GO") + facet_grid(.~.sign)
+
+
+## -----------------------------------------------------------------------------
+upsetplot(gse, showCategory=10)
+
+
+## -----------------------------------------------------------------------------
+kable(head(df_gse), escape = F, align = "c", row.names = F, caption = "Enrichment of GO including HPSE gene") %>%
+  kable_styling(c("striped"), full_width = F)
+
+## ----eval=FALSE, message=FALSE, warning=FALSE, include=FALSE------------------
+#  original_gene_list <- geneList
+#  ids<-bitr(names(original_gene_list), fromType = "SYMBOL", toType = "ENTREZID", OrgDb=organism)
 #  
-#  gem <- gem[,c("GO.ID", "Description", "p.Val", "FDR", "N.genes", "Genes")]
-#  gem = as.data.table(gem)
-#  # head(gem)
-#  #gem[like(Genes,"HPSE,"), "Description"]
-#  # write.csv(gem, "/home/alessia/Scrivania/enrichmentcircHIPK3.csv")
+#  de_ids = ids[!duplicated(ids[c("SYMBOL")]),]
+#  
+#  Eids<-bitr(names(original_gene_list), fromType = "SYMBOL", toType = "ENSEMBL", OrgDb=organism)
+#  
+#  df <- gene_mark_hipk3[gene_mark_hipk3$gene_id%in%rownames(gene_class_hipk3$VI),]
+#  df$SYMBOL <- df$gene_id
+#  df <- df[which(df$SYMBOL%in%de_ids$SYMBOL),]
+#  
+#  # Create a new column with the corresponding ENTREZ IDs
+#  df$Y = de_ids$ENTREZID[match(df$SYMBOL,de_ids$SYMBOL)]
+#  
+#  # Create a vector of the gene unuiverse
+#  kegg_gene_list <- df$log2FoldChange
+#  
+#  # Name vector with ENTREZ ids
+#  names(kegg_gene_list) <- df$Y
+#  
+#  # omit any NA values
+#  kegg_gene_list<-na.omit(kegg_gene_list)
+#  
+#  # sort the list in decreasing order (required for clusterProfiler)
+#  kegg_gene_list = sort(kegg_gene_list, decreasing = TRUE)
+#  
+#  kegg_organism = "hsa"
+#  kk2 <- gseKEGG(geneList     = kegg_gene_list,
+#                 organism     = kegg_organism,
+#                 nPerm        = 10000,
+#                 minGSSize    = 3,
+#                 maxGSSize    = 800,
+#                 pvalueCutoff = 0.1,
+#                 pAdjustMethod = "none",
+#                 keyType       = "kegg")
+#  
+#  gene <- names(kegg_gene_list)
+#  edox <- setReadable(kk2, 'org.Hs.eg.db', 'ENTREZID')
+#  df_kegg = as.data.table(edox@result)
+
+## ----eval=FALSE---------------------------------------------------------------
+#  dotplot(kk2, showCategory=10, split=".sign", title = "Enriched Pathways") + facet_grid(.~.sign)
+#  
+
+## ----eval=FALSE---------------------------------------------------------------
+#  upsetplot(kk2, showCategory = 10)
+#  
 

@@ -16,6 +16,8 @@ marker.detection(
   method.d,
   method.c,
   k,
+  choose.k = FALSE,
+  index.m = NULL,
   median = TRUE
 )
 }
