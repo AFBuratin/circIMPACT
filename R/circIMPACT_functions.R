@@ -76,7 +76,9 @@ get.color.hues <- function(meta){
 #' 
 #'
 #' @export
-marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, median=TRUE){
+marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, 
+                             choose.k=FALSE, index.m = NULL, 
+                             median=TRUE){
   
   if(median){
   if(median(circ.m)==0){
@@ -85,13 +87,38 @@ marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, me
     group <- ifelse(circ.m<median(circ.m), "g1", "g2")
   }
 } else{
-  dist_mat <- dist(as.data.frame(scale(circ.m)), method = "minkowski")
-  hclust_avg <- hclust(dist_mat, method = method.c)
-  # kmeans <- kmeans(dist_mat, k, iter.max = 10, nstart = 1)
-  cut_avg <- cutree(hclust_avg, k = k)
-  group <- ifelse(cut_avg==1, "g1", "g2")
+  if(choose.k){
+    dati = as.data.frame(scale(circ.m))
+    colnames(dati) = circ_id
+    res<-NbClust(dati, 
+                 diss=NULL, 
+                 distance = method.d, 
+                 min.nc=2, max.nc=nrow(dati)-2,
+                 method = method.c, index = index.m)
+    nc = res$Best.nc["Number_clusters"]
+    cut_avg = res$Best.partition
+    group <- paste0("g",cut_avg)
+    names(group) = names(cut_avg)
+    } else{
+    dist_mat <- dist(as.data.frame(scale(circ.m)), method = method.d)
+    hclust_avg <- hclust(dist_mat, method = method.c)
+    # kmeans <- kmeans(dist_mat, k, iter.max = 10, nstart = 1)
+    cut_avg <- cutree(hclust_avg, k = k)
+    group <- paste0("g",cut_avg)
+    names(group) = names(cut_avg)
+  }
 }
   # group <- ifelse(kmeans$cluster==1, "g1", "g2")
+  if(length(unique(group))>2){
+    datatest = data.frame(count = t(counts(dds, normalized = T)),
+                          group = group)
+    colnames(datatest) = c("count", "group")
+    circAnova <- lm(count~group, data = datatest)
+    resAnova = anova(circAnova)
+    padj = resAnova$`Pr(>F)`[[1]]
+    sample_id = rownames(datatest)
+    res = cbind(datatest, padj, circ_id, sample_id)
+    }else{
   colData(dds)$group <- as.factor(group)
   design(dds) <- ~group
   sizeFactors(dds) <- sf
@@ -105,7 +132,7 @@ marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, me
                          returnData = TRUE)
   group$sample_id = rownames(group)
   group$circ_id = circ_id
-  res = merge(group, padj, by.x="circ_id", by.y="row.names")
+  res = merge(group, padj, by.x="circ_id", by.y="row.names")}
   return(res = res)
 }
 
@@ -118,7 +145,7 @@ color_tile3 <- function(fun = "comma", digits = 3, palette = 'PiYG', n = 10) {
   fun=match.fun(FUN = fun, descend = FALSE)
   stopifnot(n >= 5)
   
-  Thresh = 0
+  Thresh = 0.1
   nHalf = n/2
   
   ## Make vector of colors for values below threshold
@@ -262,79 +289,100 @@ export_formattable <- function(f, file, width = "100%", height = "100%",
 #' 
 #'
 #' @export
-marker.selection <- function(dat, dds, sf, p.cutoff, lfc.cutoff, method.d, method.c, k, plot=FALSE, n=9, median=TRUE){
+marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, method.d, method.c, k, 
+                             choose.k=TRUE, index.m = "kl",
+                             plot=FALSE, n=9, median=TRUE){
   library(doParallel)
   library(dplyr)
   library(tidyr)
   no_cores <- detectCores() - 5  
   registerDoParallel(cores=no_cores)  
   
-  circ_mark = foreach::foreach(i=1:nrow(dat), .combine=rbind) %dopar% {
+  circ_mark = foreach::foreach(i=1:nrow(dat)) %dopar% {
 
   circ_id <- rownames(dat)[i]
   #make a for loop to estimate log2FC and p.adj to select marker circRNAs
   results.temp <- marker.detection(circ_id = circ_id, circ.m = dat[circ_id,],
                                    dds = dds[circ_id,], 
-                                   sf = sf, method.d = method.d, 
+                                   sf = sf, method.d = method.d, choose.k = choose.k, 
+                                   index.m = index.m,
                                    method.c = method.c, k = k, median = median)
   
   }
-
-  if(!is.null(p.cutoff)){
+  circ_mark = reduce(circ_mark, full_join)
+  
+  if(choose.k){
+      circ_mark_selection <- circ_mark %>% 
+        dplyr::filter(padj<=p.cutoff)
+  } else{
     if(!is.null(lfc.cutoff)){
       circ_mark_selection <- circ_mark %>%
         tidyr::drop_na() %>% 
         dplyr::filter(padj<=p.cutoff) %>% dplyr::filter(abs(log2FoldChange)>=lfc.cutoff) %>% 
         arrange(abs(log2FoldChange))
-    } else {
+    } else{
       circ_mark_selection <- circ_mark %>% 
-        tidyr::drop_na() %>% 
-        dplyr::filter(padj<=p.cutoff) %>% 
-        arrange(abs(log2FoldChange))
-    } 
-  } 
-  
-  if(!is.null(lfc.cutoff)) {
-    circ_mark_selection <- circ_mark %>% 
-      tidyr::drop_na() %>% 
-      dplyr::filter(abs(log2FoldChange)>=lfc.cutoff) %>% 
-      arrange(abs(log2FoldChange))
-  } else {
-    circ_mark_selection <- circ_mark %>% 
-      tidyr::drop_na()
-  } 
+        tidyr::drop_na()  %>% 
+        dplyr::filter(padj<=p.cutoff)
+      }
+    }
   
   markers.circrnas = unique(circ_mark_selection$circ_id)
   
-  tab_merge <- circ_mark_selection %>%
+  tab_merge <- circ_mark %>%
     dplyr::select(circ_id, log2FoldChange, padj, group, count)
 
   tab_merge$Marker <- "FALSE"
-  tab_merge$Marker[tab_merge$padj<=0.1] <- "TRUE"
+  tab_merge$Marker[tab_merge$padj<=p.cutoff] <- "TRUE"
   tab_merge$count <- as.numeric(tab_merge$count)
     
-  tab_plot = tab_merge %>% 
+  if(choose.k){
+    
+    tab_plot = tab_merge %>% 
       # tidyr::spread(group, count) %>% 
       dplyr::group_by(circ_id) %>% 
       dplyr::summarise(
-        logFC=round(mean(log2FoldChange),4),
+        logFC=ifelse(is.na(log2FoldChange),0,round(mean(log2FoldChange),4)),
         p.adj=round(mean(padj),4),
         CircIMPACT=unique(Marker),
-        mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
-        mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
-        ) %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
-          circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", 
-                                                                                font.weight = "bold")),
-          logFC =  circIMPACT::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
-          p.adj =  circIMPACT::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
-          CircIMPACT = formattable::formatter("span", 
-                             style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
-                             x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
-          area(col=5:6) ~ circIMPACT::color_tile4(digits = 3, fun = "comma")))
-          # mean.G2 = circIMPACT::color_tile4(digits = 3, fun = "comma")))
-    
-    print(tab_plot)
+        n.group = length(unique(group)),
+        # mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
+        # mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
+      ) %>% dplyr::distinct() %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
+        circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", 
+                                                                              font.weight = "bold")),
+        logFC =  circIMPACT::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
+        p.adj =  circIMPACT::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
+        CircIMPACT = formattable::formatter("span", 
+                                            style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
+                                            x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No")))))
+    # area(col=5:6) ~ circIMPACT::color_tile4(digits = 3, fun = "comma")))
+    # mean.G2 = circIMPACT::color_tile4(digits = 3, fun = "comma")))
+  } else{
 
+    
+  tab_plot = tab_merge %>% 
+    # tidyr::spread(group, count) %>% 
+    dplyr::group_by(circ_id) %>% 
+    dplyr::summarise(
+      logFC=ifelse(is.na(log2FoldChange),0,round(mean(log2FoldChange),4)),
+      p.adj=round(mean(padj),4),
+      CircIMPACT=unique(Marker),
+      n.group = length(unique(group)),
+      mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
+      mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
+    ) %>% dplyr::distinct() %>% formattable::formattable(., align = c("c","c","c","c","c"), list(
+      circ_id = formattable::formatter("span", style = ~ formattable::style(color = "grey", 
+                                                                            font.weight = "bold")),
+      logFC =  circIMPACT::color_tile3(digits = 3, n = 10, fun = "comma", palette = "PiYG"),
+      p.adj =  circIMPACT::stoplighttile(cut1 = 0.01, cut2 = 0.05, cut3 = 0.1, fun = "comma", digits = 4),
+      CircIMPACT = formattable::formatter("span", 
+                                          style = x ~ formattable::style(color = ifelse(x, "orange", "gray")), 
+                                          x ~ formattable::icontext(ifelse(x, "ok", "remove"), ifelse(x, "Yes", "No"))),
+      area(col=6:7) ~ circIMPACT::color_tile4(digits = 3, fun = "comma")))
+  # mean.G2 = circIMPACT::color_tile4(digits = 3, fun = "comma")))
+  }
+  print(tab_plot)
   return(list(plot=tab_plot, circ.mark = circ_mark, circ.targetIDS = markers.circrnas, group.df = circ_mark[,c("circ_id", "sample_id", "group")]))
 }
   
@@ -383,7 +431,7 @@ circ_contrib = function(matrix_pc, K){
 #' 
 #'
 #' @export
-geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colData, covariates, padj, expr=FALSE){
+gene.expression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colData, covariates, padj, expr=FALSE){
   
   if(expr){
     ## define covariates of interest: circlow vs circhigh
@@ -429,7 +477,7 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
       ## performe DEGs
       dds <- DESeq(dds, fitType = "local")
       res <- results(dds)
-        n.degs <- sum(res$padj <= padj, na.rm = T)
+      n.degs <- sum(res$padj <= padj, na.rm = T)
       degs <- res[which(res$padj <= padj), ]
       res.dt <- as.data.table(res[which(res$padj <= padj), ], keep.rownames = "gene_id")
       rownames(res.dt) <- res.dt$gene_id
@@ -451,7 +499,7 @@ geneexpression <- function(circ_idofinterest, circRNAs, linearRNAs, group, colDa
 #' 
 #'
 #' @export
-gene_class = function(circ_idofinterest, circRNAs, linearRNAs, group, colData, covariates, th.corr){
+gene.class = function(circ_idofinterest, circRNAs, linearRNAs, group, colData, covariates, th.corr){
   circ_sample <- circRNAs %>% as.data.table() %>% dplyr::filter(circ_id==circ_idofinterest) %>% 
     dplyr::select_if(is.numeric) %>%
     gather(sample, sample_val) %>% dplyr::filter(sample_val>=median(sample_val))
@@ -512,8 +560,3 @@ gene_class = function(circ_idofinterest, circRNAs, linearRNAs, group, colData, c
 }
   
 
-class.res25 = rbindlist(lapply(lapply(gene_class, "[[", "variables"), function(x) as.data.frame(x)), idcol = "circIMPACT") %>% dplyr::group_by(circIMPACT) %>% tally()
-degs.res25 = gene_mark %>% as.data.table() %>% dplyr::group_by(circIMPACT, n.degs) %>% 
-  dplyr::summarize(UP = sum(log2FoldChange>0),
-                   DW = sum(log2FoldChange<0)) 
-write.csv(merge(class.res25, degs.res25, by="circIMPACT"), "/media/Data/CircIMPACT/res25_tab2.csv")
