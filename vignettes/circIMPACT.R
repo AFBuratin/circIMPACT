@@ -87,7 +87,7 @@ circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq,
 
 ## -----------------------------------------------------------------------------
 circMark <-"11:33286412-33287511"
-  circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
+circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=sd(counts))
 
@@ -484,7 +484,7 @@ VI.mat %>% mutate_at(1:4, round, 3) %>% head() %>%
 #  min_depth_frame <- min_depth_distribution(gene_class_hipk3$RF)
 #  importance_frame <- measure_importance(gene_class_hipk3$RF)
 #  
-#    plot_multi_way_importance(importance_frame, x_measure = "accuracy_decrease", y_measure = "gini_decrease",
+#  plot_multi_way_importance(importance_frame, x_measure = "accuracy_decrease", y_measure = "gini_decrease",
 #                            size_measure = "no_of_nodes", no_of_labels = 5)
 
 ## ----message=FALSE, warning=FALSE---------------------------------------------
@@ -532,9 +532,10 @@ gse <- gseGO(geneList=geneList,
 
 df_gse <- gse@result
 df_gse = as.data.table(df_gse)
+dim(df_gse)
 
 ## -----------------------------------------------------------------------------
-dotplot(gse, showCategory=10, split=".sign", title = "Enriched GO") + facet_grid(.~.sign)
+enrichplot::dotplot(gse, showCategory=10, split=".sign", title = "Enriched GO") + facet_grid(.~.sign)
 
 
 ## -----------------------------------------------------------------------------
@@ -618,7 +619,6 @@ names(geneList) <- gene_mark_hipk3$gene_id[gene_mark_hipk3$gene_id%in%rownames(g
 # order gene list by foldchange
 geneList = sort(geneList, decreasing = TRUE)
 # names(geneList) <- gene_mark$Gene[gene_mark$circIMPACT==markers.circrnas[5]]
-geneList <- geneList[abs(geneList)>=1.89]
 
 
 gse <- gseGO(geneList=geneList, 
@@ -636,7 +636,7 @@ df_gse <- gse@result
 df_gse = as.data.table(df_gse)
 
 ## -----------------------------------------------------------------------------
-dotplot(gse, showCategory=10, split=".sign", title = "Enriched GO") + facet_grid(.~.sign)
+enrichplot::dotplot(gse, showCategory=10, split=".sign", title = "Enriched GO") + facet_grid(.~.sign)
 
 
 ## -----------------------------------------------------------------------------

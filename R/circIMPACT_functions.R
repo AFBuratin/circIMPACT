@@ -542,7 +542,7 @@ gene.class = function(circ_idofinterest, circRNAs, linearRNAs, group, colData, c
   # note, this will fit hundreds of forests (not trees), so it may take a while.
   
   # Use caret's rfe function to fit RF models to these different feature spaces
-  rfeResults = rfe(x = select(trainingSet_DM, -circKD), y = trainingSet_DM$circKD,
+  rfeResults = rfe(x = dplyr::select(trainingSet_DM, -circKD), y = trainingSet_DM$circKD,
                    sizes = sizes,
                    rfeControl = ctrl)
   VI <- varImp(object = rfeResults)
@@ -550,7 +550,7 @@ gene.class = function(circ_idofinterest, circRNAs, linearRNAs, group, colData, c
   VarSel = rfeResults$optVariables
   
   # varNames1 <- paste(VarSel, collapse = "+")
-  varNames1 <- gsub("-", "_", paste(colnames(select(trainingSet_DM, -circKD)), collapse = "+"))
+  varNames1 <- gsub("-", "_", paste(colnames(dplyr::select(trainingSet_DM, -circKD)), collapse = "+"))
   dat.rf = trainingSet_DM
   colnames(dat.rf) = gsub("-","_", colnames(dat.rf))
   rf <- randomForest(formula = as.formula(paste("circKD", varNames1, 
