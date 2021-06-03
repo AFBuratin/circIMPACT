@@ -83,7 +83,7 @@ Use `marker.selection` function to find out circRNA impacted specifing:
 * method for calculate distance acrosso items
 * method for clustering
 
-```{r example}
+```{r example, message=FALSE, warning=FALSE}
 circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq, 
                                            dds = dds.filt.expr, 
                                            sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1, 
@@ -93,9 +93,9 @@ circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq,
 
 For instance, you can see the distribution of circRNA-impact:
 
-```{r plotDensity}
+```{r plotDensity, message=FALSE, warning=FALSE}
   
-circMark <- circIMPACT$circ.targetIDS[2]
+circMark <- circIMPACT$circ.targetIDS[1]
 circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=var(counts))
