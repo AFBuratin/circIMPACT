@@ -61,7 +61,7 @@ The input for any of the tools consist in count matrices: from the same samples 
 ## Installation and loading
 
 ```{r eval = FALSE}
-devtools::install_github("AFBuratin/circIMPACT")
+devtools::install_github("AFBuratin/circIMPACT", force = TRUE)
 ```
 
 ```{r setup, warning = FALSE, message = FALSE}
@@ -152,9 +152,11 @@ circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq,
                                method.d = "euclidean", method.c = "ward.D2", 
                                k = 2, median = TRUE, choose.k = FALSE, index.m = "kl")
 
-# circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq, 
-#                                       dds = dds.filt.expr, 
-#                                           sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, method.d = "euclidean", method.c = "ward.D2", k = 2, median = FALSE, choose.k = TRUE, index.m = "kl")
+circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq,
+                                      dds = dds.filt.expr,
+                                      sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, 
+                                      method.d = "euclidean", method.c = "ward.D2", k = 2, 
+                                      median = FALSE, choose.k = TRUE, index.m = "kl")
 ```
 
 The result `list` will include:
