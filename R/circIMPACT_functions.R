@@ -290,7 +290,7 @@ export_formattable <- function(f, file, width = "100%", height = "100%",
 #'
 #' @export
 marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, method.d, method.c, k, 
-                             choose.k=TRUE, index.m = "kl",
+                             choose.k=FALSE, index.m = NULL,
                              plot=FALSE, n=9, median=TRUE){
   library(doParallel)
   library(dplyr)

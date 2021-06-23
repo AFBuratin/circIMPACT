@@ -148,15 +148,13 @@ To establish a possible impact of circRNA in gene expression using different mol
 
 circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq, 
                                dds = dds.filt.expr, 
-                               sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1, 
-                               method.d = "euclidean", method.c = "ward.D2", 
-                               k = 2, median = TRUE, choose.k = FALSE, index.m = "kl")
+                               sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1)
 
 circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq,
                                       dds = dds.filt.expr,
                                       sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, 
-                                      method.d = "euclidean", method.c = "ward.D2", k = 2, 
-                                      median = FALSE, choose.k = TRUE, index.m = "kl")
+                                      method.d = "euclidean", method.c = "ward.D2",
+                                      median = FALSE, choose.k = TRUE, index.m = "silhouette")
 ```
 
 The result `list` will include:
