@@ -25,7 +25,6 @@ devtools::install_github("AFBuratin/circIMPACT")
 This is a basic example which shows you how to detect circRNA-impacted:
 
 ``` r
-<<<<<<< HEAD
 
 library(circIMPACT)
 library(DESeq2)
@@ -51,8 +50,6 @@ library(webshot)
 ```
 
 ``` r
-=======
->>>>>>> 177cae8a59df1b170af29f34d7aabb99ba4c67f2
 ## load data for example
 data("circularData")
 data("meta")
@@ -75,13 +72,7 @@ calculate distance acrosso items \* method for clustering
 ``` r
 circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq, 
                                            dds = dds.filt.expr, 
-<<<<<<< HEAD
                                            sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1)
-=======
-                                           sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1, 
-                                           method.d = "euclidean", method.c = "ward.D2", 
-                                           k = 2, median = TRUE, choose.k = FALSE, index.m = "kl")
->>>>>>> 177cae8a59df1b170af29f34d7aabb99ba4c67f2
 ```
 
 For instance, you can see the distribution of circRNA-impact:

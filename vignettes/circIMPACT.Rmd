@@ -52,11 +52,7 @@ The toolset performs functional enrichment analysis and visualization of gene li
 The main tools in *circIMPACT* are:
 
 * `marker.detection` - detection of circRNAs that can stratified samples by their expression signifincantly
-<<<<<<< HEAD
 * `gene.expression` - DEG analysis for each circRNA-markers defined by K-means algorithm or by circRNA expression.
-=======
-* `gene.expression` - DEG analysis for each circRNA-markers defined by K-means algorithm or by circRNA expression (high vs low)
->>>>>>> 177cae8a59df1b170af29f34d7aabb99ba4c67f2
 
 The input for any of the tools consist in count matrices: from the same samples we need the quantification of circular and linear RNAs.
 
@@ -152,7 +148,6 @@ To establish a possible impact of circRNA in gene expression using different mol
 
 circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq, 
                                dds = dds.filt.expr, 
-<<<<<<< HEAD
                                sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1)
 
 circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq,
@@ -160,15 +155,6 @@ circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq,
                                       sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, 
                                       method.d = "euclidean", method.c = "ward.D2",
                                       median = FALSE, choose.k = TRUE, index.m = "silhouette")
-=======
-                               sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1, 
-                               method.d = "euclidean", method.c = "ward.D2", 
-                               k = 2, median = TRUE, choose.k = FALSE, index.m = "kl")
-
-# circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq, 
-#                                       dds = dds.filt.expr, 
-#                                           sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, method.d = "euclidean", method.c = "ward.D2", k = 2, median = FALSE, choose.k = TRUE, index.m = "kl")
->>>>>>> 177cae8a59df1b170af29f34d7aabb99ba4c67f2
 ```
 
 The result `list` will include:

@@ -77,7 +77,6 @@ circNormDeseq <- counts(dds.filt.expr, normalized = T)
 
 circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq, 
                                dds = dds.filt.expr, 
-<<<<<<< HEAD
                                sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1)
 
 circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq,
@@ -89,18 +88,6 @@ circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq,
 ## -----------------------------------------------------------------------------
 circMark <-"11:33286412-33287511"
 circIMPACT_Kmeans$group.df[circIMPACT_Kmeans$group.df$circ_id==circMark,]
-=======
-                               sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1, 
-                               method.d = "euclidean", method.c = "ward.D2", 
-                               k = 2, median = TRUE, choose.k = FALSE, index.m = "kl")
-
-# circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq, 
-#                                       dds = dds.filt.expr, 
-#                                           sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, method.d = "euclidean", method.c = "ward.D2", k = 2, median = FALSE, choose.k = TRUE, index.m = "kl")
-
-## -----------------------------------------------------------------------------
-circMark <-"11:33286412-33287511"
->>>>>>> 177cae8a59df1b170af29f34d7aabb99ba4c67f2
 circMark_group.df <- circIMPACT$group.df[circIMPACT$group.df$circ_id==circMark,]
 circMark_group.df$counts <- merge(circMark_group.df, reshape2::melt(circNormDeseq[circMark,]), by.x = "sample_id", by.y = "row.names")[,"value"]
 mu <- ddply(circMark_group.df, "group", summarise, Mean=mean(counts), Median=median(counts), Variance=sd(counts))
