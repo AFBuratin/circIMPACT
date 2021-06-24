@@ -35,7 +35,7 @@ devtools::install_github("AFBuratin/circIMPACT")
 
 This is a basic example which shows you how to detect circRNA-impacted:
 
-```{r packageload, message=FALSE, warning=FALSE, include=FALSE}
+```{r packageload, message=FALSE, warning=FALSE}
 
 library(circIMPACT)
 library(DESeq2)
@@ -86,9 +86,7 @@ Use `marker.selection` function to find out circRNA impacted specifing:
 ```{r example, message=FALSE, warning=FALSE}
 circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq, 
                                            dds = dds.filt.expr, 
-                                           sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1, 
-                                           method.d = "euclidean", method.c = "ward.D2", 
-                                           k = 2, median = TRUE, choose.k = FALSE, index.m = "kl")
+                                           sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1)
 ```
 
 For instance, you can see the distribution of circRNA-impact:

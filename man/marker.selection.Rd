@@ -17,8 +17,8 @@ marker.selection(
   method.d,
   method.c,
   k,
-  choose.k = TRUE,
-  index.m = "kl",
+  choose.k = FALSE,
+  index.m = NULL,
   plot = FALSE,
   n = 9,
   median = TRUE

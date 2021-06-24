@@ -1,5 +1,5 @@
 ---
-title: "The circIMPACT package - exploring molecular pathways by linking circular RNA to genes and pathways"
+title: "The CircIMPACT package - exploring molecular pathways by linking circular RNA to genes and pathways"
 author: 
   - name: Alessia Buratin
     affiliation: Departement of Biology, Department of Molecular Medicine, University of Padova
@@ -52,7 +52,7 @@ The toolset performs functional enrichment analysis and visualization of gene li
 The main tools in *circIMPACT* are:
 
 * `marker.detection` - detection of circRNAs that can stratified samples by their expression signifincantly
-* `gene.expression` - DEG analysis for each circRNA-markers defined by K-means algorithm or by circRNA expression (high vs low)
+* `gene.expression` - DEG analysis for each circRNA-markers defined by K-means algorithm or by circRNA expression.
 
 The input for any of the tools consist in count matrices: from the same samples we need the quantification of circular and linear RNAs.
 
