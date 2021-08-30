@@ -79,7 +79,6 @@ get.color.hues <- function(meta){
 marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, 
                              choose.k=FALSE, index.m = NULL, 
                              median=TRUE){
-  
   if(median){
     if(median(circ.m)==0){
       group <- ifelse(circ.m<mean(circ.m), "g1", "g2")
@@ -298,7 +297,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
   no_cores <- detectCores() - 5  
   registerDoParallel(cores=no_cores)  
   
-  circ_mark = foreach::foreach(i=1:nrow(dat)) %dopar% {
+  circ_mark = foreach::foreach(i=1:nrow(dat), .packages=c("DESeq2", "NbClust")) %dopar% {
     
     circ_id <- rownames(dat)[i]
     #make a for loop to estimate log2FC and p.adj to select marker circRNAs
