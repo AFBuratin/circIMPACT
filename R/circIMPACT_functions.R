@@ -336,12 +336,10 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
   tab_merge <- circ_mark %>%
     dplyr::select(circ_id, log2FoldChange, padj, group, count)
   }
-  
-  tab_merge$Marker <- "FALSE"
-  tab_merge$Marker[tab_merge$padj<=p.cutoff] <- "TRUE"
-  tab_merge$count <- as.numeric(tab_merge$count)
   tab_merge = tab_merge %>% dplyr::group_by(circ_id) %>% mutate(min.lev = min(length(unique(group))))
+  tab_merge$Marker <- "FALSE"
   tab_merge$Marker[tab_merge$padj<=p.cutoff&tab_merge$min.lev>=round(ncol(dat)/3)] <- "TRUE"
+  tab_merge$count <- as.numeric(tab_merge$count)
   if(choose.k){
     
     tab_plot = tab_merge %>% 
