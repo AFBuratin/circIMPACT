@@ -15,6 +15,6 @@ Suggests:
     knitr, rmarkdown, DESeq2, data.table, plyr, Rtsne, ggplot2, ggrepel, ComplexHeatmap, circlize, viridis, 
     kableExtra, sparkline, magrittr, caret
 VignetteBuilder: knitr
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.0
 Depends: 
     R (>= 2.10)

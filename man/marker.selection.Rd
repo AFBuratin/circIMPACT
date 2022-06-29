@@ -19,6 +19,7 @@ marker.selection(
   k,
   choose.k = FALSE,
   index.m = NULL,
+  max.nc = 2,
   plot = FALSE,
   n = 9,
   median = TRUE

@@ -16,9 +16,10 @@ marker.detection(
   method.d,
   method.c,
   k,
-  choose.k = FALSE,
-  index.m = NULL,
-  median = TRUE
+  choose.k,
+  index.m,
+  max.nc = 5,
+  median
 )
 }
 \arguments{
