@@ -77,8 +77,8 @@ get.color.hues <- function(meta){
 #'
 #' @export
 marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k, 
-                             choose.k=FALSE, index.m = NULL, 
-                             median=TRUE){
+                             choose.k, index.m, max.nc = 5,
+                             median){
   
   if(median){
     if(median(circ.m)==0){
@@ -93,7 +93,7 @@ marker.detection <- function(circ_id, circ.m, dds, sf, method.d, method.c, k,
       res<-NbClust(dati, 
                    diss=NULL, 
                    distance = method.d, 
-                   min.nc=2, max.nc=nrow(dati)-2,
+                   min.nc=2, max.nc=max.nc,
                    method = method.c, index = index.m)
       nc = res$Best.nc["Number_clusters"]
       cut_avg = res$Best.partition
@@ -290,7 +290,7 @@ export_formattable <- function(f, file, width = "100%", height = "100%",
 #'
 #' @export
 marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, method.d, method.c, k, 
-                             choose.k=FALSE, index.m = NULL,
+                             choose.k=FALSE, index.m = NULL,max.nc=2,
                              plot=FALSE, n=9, median=TRUE){
   library(doParallel)
   library(dplyr)
@@ -306,10 +306,10 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
                                      dds = dds[circ_id,], 
                                      sf = sf, method.d = method.d, choose.k = choose.k, 
                                      index.m = index.m,
-                                     method.c = method.c, k = k, median = median)
+                                     method.c = method.c, k = k, median = median, max.nc = max.nc)
     
   }
-  circ_mark = reduce(circ_mark, full_join)
+  circ_mark = purrr::reduce(circ_mark, full_join)
   
   if(choose.k){
     circ_mark_selection <- circ_mark %>% 
@@ -329,8 +329,13 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
   
   markers.circrnas = unique(circ_mark_selection$circ_id)
   
+  if(choose.k){
+    tab_merge <- circ_mark %>%
+      dplyr::select(circ_id, padj, group, count)
+  } else{
   tab_merge <- circ_mark %>%
     dplyr::select(circ_id, log2FoldChange, padj, group, count)
+  }
   
   tab_merge$Marker <- "FALSE"
   tab_merge$Marker[tab_merge$padj<=p.cutoff] <- "TRUE"
@@ -342,7 +347,6 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
       # tidyr::spread(group, count) %>% 
       dplyr::group_by(circ_id) %>% 
       dplyr::summarise(
-        logFC=ifelse(is.na(log2FoldChange),0,round(mean(log2FoldChange),4)),
         p.adj=round(mean(padj),4),
         CircIMPACT=unique(Marker),
         n.group = length(unique(group)),
