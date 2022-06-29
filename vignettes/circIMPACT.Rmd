@@ -150,8 +150,8 @@ circIMPACT <- circIMPACT::marker.selection(dat = circNormDeseq,
                                dds = dds.filt.expr, 
                                sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = 1)
 
-circIMPACT_Kmeans <- marker.selection(dat = circNormDeseq,
-                                      dds = dds.filt.expr,
+circIMPACT_Kmeans <- circIMPACT::marker.selection(dat = circNormDeseq[1:5,],
+                                      dds = dds.filt.expr[1:5,], 
                                       sf = sf.filt, p.cutoff = 0.05, lfc.cutoff = NULL, 
                                       method.d = "euclidean", method.c = "ward.D2",
                                       median = FALSE, choose.k = TRUE, index.m = "silhouette")
