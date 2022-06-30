@@ -327,7 +327,6 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
     }
   }
   
-  markers.circrnas = unique(circ_mark_selection$circ_id)
   
   if(choose.k){
     tab_merge <- circ_mark %>%
@@ -336,10 +335,12 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
   tab_merge <- circ_mark %>%
     dplyr::select(circ_id, log2FoldChange, padj, group, count)
   }
-  tab_merge = tab_merge %>% dplyr::group_by(circ_id) %>% mutate(min.lev = min(length(unique(group))))
+  tab_merge = tab_merge %>% dplyr::group_by(circ_id) %>% mutate(min.lev = min(table(group)))
   tab_merge$Marker <- "FALSE"
   tab_merge$Marker[tab_merge$padj<=p.cutoff & tab_merge$min.lev>1] <- "TRUE"
   tab_merge$count <- as.numeric(tab_merge$count)
+  markers.circrnas = unique(tab_merge$circ_id[tab_merge$Marker=="TRUE"])
+  
   if(choose.k){
     
     tab_plot = tab_merge %>% 
@@ -348,6 +349,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
       dplyr::summarise(
         p.adj=round(mean(padj),4),
         CircIMPACT=unique(Marker),
+        min.lev = unique(min.lev),
         n.group = length(unique(group)),
         # mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
         # mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
