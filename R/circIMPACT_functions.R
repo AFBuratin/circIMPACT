@@ -338,7 +338,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
   }
   tab_merge = tab_merge %>% dplyr::group_by(circ_id) %>% mutate(min.lev = min(length(unique(group))))
   tab_merge$Marker <- "FALSE"
-  tab_merge$Marker[tab_merge$padj<=p.cutoff&tab_merge$min.lev>=round(ncol(dat)/3)] <- "TRUE"
+  tab_merge$Marker[tab_merge$padj<=p.cutoff & tab_merge$min.lev>1] <- "TRUE"
   tab_merge$count <- as.numeric(tab_merge$count)
   if(choose.k){
     
@@ -371,6 +371,7 @@ marker.selection <- function(dat, dds, sf, p.cutoff=0.01, lfc.cutoff=NULL, metho
         logFC=ifelse(is.na(log2FoldChange),0,round(mean(log2FoldChange),4)),
         p.adj=round(mean(padj),4),
         CircIMPACT=unique(Marker),
+        min.lev = unique(min.lev),
         n.group = length(unique(group)),
         mean.G1=round(mean(count[group=="g1"], na.rm=TRUE), 4),
         mean.G2=round(mean(count[group=="g2"], na.rm=TRUE), 4)
